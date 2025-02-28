@@ -1,7 +1,7 @@
 import { useState, useEffect,useCallback } from "react";
 import { View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet, Alert, Vibration } from "react-native";
 import * as Location from 'expo-location';
-import Notifications from 'expo-notifications';
+import * as Notifications from 'expo-notifications';
 import NetInfo from "@react-native-community/netinfo";
 
 const HomeScreen = () => {
@@ -53,6 +53,23 @@ const HomeScreen = () => {
     };
   }, [locationSubscription]);
 
+  // homeLocation state'ini izleyen yeni bir useEffect ekleyin
+  useEffect(() => {
+    if (homeLocation) {
+      console.log("Kaydedilen konum:", homeLocation);
+      Alert.alert(
+        "Başarılı",
+        "Ev konumunuz başarıyla kaydedildi!",
+        [
+          {
+            text: "Tamam",
+            onPress: () => startLocationTracking(homeLocation)
+          }
+        ]
+      );
+    }
+  }, [homeLocation]);
+
   // 📡 İnternet bağlantısını kontrol et
   const checkInternetConnection = () => {
     NetInfo.fetch().then(state => {
@@ -101,22 +118,8 @@ const HomeScreen = () => {
 
       if (location && location.coords) {
         const { latitude, longitude } = location.coords;
-        // State'i güncelledikten sonra callback'i çağır
-        setHomeLocation({ latitude, longitude }, () => {
-          Alert.alert(
-            "Başarılı",
-            "Ev konumunuz başarıyla kaydedildi!",
-            [
-              {
-                text: "Tamam",
-                onPress: () => {
-                  console.log("Kaydedilen konum:", { latitude, longitude });
-                  startLocationTracking({ latitude, longitude });
-                }
-              }
-            ]
-          );
-        });
+        // State'i direkt olarak güncelle
+        setHomeLocation({ latitude, longitude });
       } else {
         throw new Error("Konum bilgisi alınamadı");
       }
@@ -189,7 +192,7 @@ const HomeScreen = () => {
     const φ1 = (lat1 * Math.PI) / 180;
     const φ2 = (lat2 * Math.PI) / 180;
     const Δφ = ((lat2 - lat1) * Math.PI) / 180;
-    const Δλ = ((lon2 - lon1) * Math.PI) / 180;
+    const Δλ = ((lon1 - lat1) * Math.PI) / 180;
 
     const a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
               Math.cos(φ1) * Math.cos(φ2) * 
@@ -201,27 +204,43 @@ const HomeScreen = () => {
 
   // 📩 Bildirim Gönder
   const sendNotification = async () => {
-  try {
-      await Notifications.scheduleNotificationAsync({
-      content: {
-        title: "Eşyalarını Aldın mı?",
-        body: `${selectedItems.length > 0 ? 
-            `Seçili eşyalar: ${selectedItems.join(', ')}` : 
-            'Hiç eşya seçmedin!'}`,
-        sound: 'default',
-          priority: Notifications.AndroidNotificationPriority.HIGH,
-          data: { 
-            distance: distance,
-            timestamp: new Date().getTime() 
-          },
-      },
-      trigger: null // Anlık bildirim için null kullan
+    try {
+      // Önce bildirim izinlerini kontrol edelim
+      const { status } = await Notifications.getPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert(
+          "İzin Hatası",
+          "Bildirim göndermek için izin gerekiyor"
+        );
+        return;
+      }
+
+      // Bildirim ayarlarını yapılandır
+      await Notifications.setNotificationHandler({
+        handleNotification: async () => ({
+          shouldShowAlert: true,
+          shouldPlaySound: true,
+          shouldSetBadge: false,
+        }),
       });
+
+      // Bildirimi gönder
+      await Notifications.scheduleNotificationAsync({
+        content: {
+          title: "Eşyalarını Aldın mı?",
+          body: selectedItems.length > 0 
+            ? `Seçili eşyalar: ${selectedItems.join(', ')}`
+            : 'Hiç eşya seçmedin!',
+          sound: 'default',
+        },
+        trigger: null // Anlık bildirim için
+      });
+
     } catch (error) {
-      console.error('Bildirim gönderilemedi:', error);
+      console.error('Bildirim hatası:', error);
       Alert.alert(
-        "Bildirim Hatası", 
-        "Bildirim gönderilemedi. Lütfen izinleri kontrol edin."
+        "Bildirim Hatası",
+        "Bildirim gönderilemedi: " + error.message
       );
     }
   };
