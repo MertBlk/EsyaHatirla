@@ -1,6 +1,6 @@
 import { useState, useEffect,useCallback } from "react";
 import { View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet, Alert, Vibration } from "react-native";
-import Location from 'expo-location';
+import * as Location from 'expo-location';
 import Notifications from 'expo-notifications';
 import NetInfo from "@react-native-community/netinfo";
 
@@ -64,30 +64,89 @@ const HomeScreen = () => {
 
   // 📍 Kullanıcının konum izinlerini isteme
   const requestPermissions = async () => {
-    let { status } = await Location.requestForegroundPermissionsAsync();
-    if (status !== 'granted') {
-      Alert.alert("İzin Hatası", "Konum izni verilmedi.");
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert("İzin Hatası", "Konum izni verilmedi.");
+        return false;
+      }
+      return true;
+    } catch (error) {
+      console.error("İzin hatası:", error);
+      Alert.alert("Hata", "Konum izinleri alınırken bir hata oluştu.");
+      return false;
     }
   };
 
   // 📍 Kullanıcının mevcut konumunu al ve ev konumu olarak kaydet
   const saveHomeLocation = async () => {
     try {
-      let location = await Location.getCurrentPositionAsync({});
-      const { latitude, longitude } = location.coords;
-      setHomeLocation({ latitude, longitude });
-      Alert.alert("Ev Konumu Kaydedildi", "Ev konumunuz başarıyla kaydedildi!");
-      
-      // Konum kaydedildikten sonra otomatik takibi başlat
-      startLocationTracking();
+      const permissionGranted = await requestPermissions();
+      if (!permissionGranted) {
+        return;
+      }
+
+      const enabled = await Location.hasServicesEnabledAsync();
+      if (!enabled) {
+        Alert.alert(
+          "Konum Servisleri Kapalı",
+          "Lütfen cihazınızın konum servislerini açın."
+        );
+        return;
+      }
+
+      const location = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.High
+      });
+
+      if (location && location.coords) {
+        const { latitude, longitude } = location.coords;
+        // State'i güncelledikten sonra callback'i çağır
+        setHomeLocation({ latitude, longitude }, () => {
+          Alert.alert(
+            "Başarılı",
+            "Ev konumunuz başarıyla kaydedildi!",
+            [
+              {
+                text: "Tamam",
+                onPress: () => {
+                  console.log("Kaydedilen konum:", { latitude, longitude });
+                  startLocationTracking({ latitude, longitude });
+                }
+              }
+            ]
+          );
+        });
+      } else {
+        throw new Error("Konum bilgisi alınamadı");
+      }
     } catch (error) {
-      Alert.alert("Hata", "Konum alınamadı: " + error.message);
+      console.error("Konum alma hatası:", error);
+      Alert.alert(
+        "Hata",
+        "Konum alınırken bir hata oluştu. Lütfen tekrar deneyin."
+      );
     }
   };
 
   // Yeni bir fonksiyon ekleyelim
-  const startLocationTracking = async () => {
+  const startLocationTracking = async (savedLocation) => {
     try {
+      // savedLocation parametresini veya state'teki homeLocation'ı kullan
+      const locationToTrack = savedLocation || homeLocation;
+      
+      if (!locationToTrack) {
+        Alert.alert("Hata", "Önce ev konumunuzu kaydetmelisiniz.");
+        return;
+      }
+
+      // Eğer zaten takip varsa, yeni bir takip başlatmayalım
+      if (locationSubscription) {
+        return;
+      }
+
+      console.log("Takip başlatılıyor, konum:", locationToTrack);
+
       const subscription = await Location.watchPositionAsync(
         {
           accuracy: Location.Accuracy.Balanced,
@@ -97,11 +156,13 @@ const HomeScreen = () => {
         (location) => {
           const { latitude, longitude } = location.coords;
           const distance = getDistanceFromLatLonInMeters(
-            homeLocation.latitude,
-            homeLocation.longitude,
+            locationToTrack.latitude,
+            locationToTrack.longitude,
             latitude,
             longitude
           );
+
+          console.log("Mevcut mesafe:", distance);
 
           // 50 metre uzaklaşınca bildirim gönder
           if (distance >= 50) {
@@ -114,7 +175,11 @@ const HomeScreen = () => {
       setLocationSubscription(subscription);
       setIsTracking(true);
     } catch (error) {
-      Alert.alert("Hata", "Konum takibi başlatılamadı: " + error.message);
+      console.error("Konum takibi hatası:", error);
+      Alert.alert(
+        "Hata",
+        "Konum takibi başlatılamadı: " + (error.message || "Bilinmeyen hata")
+      );
     }
   };
 

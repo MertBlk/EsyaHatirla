@@ -18,6 +18,9 @@
         {
           "locationAlwaysAndWhenInUsePermission": "Konumunuzu takip etmek için izin gerekli"
         }
+      ],
+      [
+        "expo-notifications"
       ]
     ],
     "assetBundlePatterns": [
@@ -29,7 +32,8 @@
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "Konumunuzu takip etmek için gerekli",
         "NSLocationAlwaysAndWhenInUseUsageDescription": "Arka planda konum takibi için gerekli",
-        "UIBackgroundModes": ["location", "fetch"]
+        "UIBackgroundModes": ["location", "fetch"],
+        "UIRequiredDeviceCapabilities": ["location-services"]
       }
     },
     "android": {
