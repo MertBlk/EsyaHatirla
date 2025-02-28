@@ -16,7 +16,7 @@
       [
         "expo-location",
         {
-          "locationAlwaysAndWhenInUsePermission": "Konumunuzu ev mesafesini hesaplamak için kullanıyoruz."
+          "locationAlwaysAndWhenInUsePermission": "Konumunuzu takip etmek için izin gerekli"
         }
       ]
     ],
@@ -25,7 +25,12 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.yourcompany.esyahatirla"
+      "bundleIdentifier": "com.yourcompany.esyahatirla",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "Konumunuzu takip etmek için gerekli",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "Arka planda konum takibi için gerekli",
+        "UIBackgroundModes": ["location", "fetch"]
+      }
     },
     "android": {
       "adaptiveIcon": {

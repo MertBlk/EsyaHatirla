@@ -1,76 +1,232 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native';
-import * as Location from 'expo-location';
-import * as Notifications from 'expo-notifications';
+import { useState, useEffect,useCallback } from "react";
+import { View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet, Alert, Vibration } from "react-native";
+import Location from 'expo-location';
+import Notifications from 'expo-notifications';
+import NetInfo from "@react-native-community/netinfo";
 
-export default function HomeScreen() {
+const HomeScreen = () => {
+  const initialItems = [
+    "🔑 Anahtar", "👝 Cüzdan", "🎧 Kulaklık", "📱 Telefon", "🏠 Ev Kartı",
+    "💳 Banka Kartı", "🎟️ Toplu Taşıma Kartı", "🔋 Powerbank", "⌚ Akıllı Saat",
+    "🕶️ Güneş Gözlüğü", "💄 Ruj", "🚬 Sigara / Çakmak", "📚 Defter / Kitap",
+    "🩹 İlaç", "🧥 Mont / Şemsiye", "🥤 Su Şişesi", "🎫 Kimlik / Pasaport",
+    "🔑 Araba Anahtarı"
+  ];
+
+  const [items, setItems] = useState(initialItems);
+  const [customItem, setCustomItem] = useState("");
+  const [selectedItems, setSelectedItems] = useState([]);
   const [homeLocation, setHomeLocation] = useState(null);
-  const [currentDistance, setCurrentDistance] = useState(0);
+  const [locationSubscription, setLocationSubscription] = useState(null);
+  const [isTracking, setIsTracking] = useState(false); // State ekleyin
 
   useEffect(() => {
-    setupPermissions();
+    checkInternetConnection();
+    requestPermissions();
   }, []);
 
-  const setupPermissions = async () => {
-    const { status: locationStatus } = await Location.requestForegroundPermissionsAsync();
-    if (locationStatus !== 'granted') {
-      Alert.alert('İzin Gerekli', 'Konum izni verilmedi');
-      return;
-    }
+  useEffect(() => {
+    const setupNotifications = async () => {
+      const { status } = await Notifications.requestPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('İzin Hatası', 'Bildirim izni verilmedi');
+        return;
+      }
 
-    const { status: notificationStatus } = await Notifications.requestPermissionsAsync();
-    if (notificationStatus !== 'granted') {
-      Alert.alert('İzin Gerekli', 'Bildirim izni verilmedi');
+      await Notifications.setNotificationHandler({
+        handleNotification: async () => ({
+          shouldShowAlert: true,
+          shouldPlaySound: true,
+          shouldSetBadge: false,
+        }),
+      });
+    };
+    
+    setupNotifications();
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (locationSubscription) {
+        locationSubscription.remove();
+      }
+    };
+  }, [locationSubscription]);
+
+  // 📡 İnternet bağlantısını kontrol et
+  const checkInternetConnection = () => {
+    NetInfo.fetch().then(state => {
+      if (!state.isConnected) {
+        Alert.alert("Bağlantı Sorunu", "Lütfen internet bağlantınızı kontrol edin!");
+      }
+    });
+  };
+
+  // 📍 Kullanıcının konum izinlerini isteme
+  const requestPermissions = async () => {
+    let { status } = await Location.requestForegroundPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert("İzin Hatası", "Konum izni verilmedi.");
     }
   };
 
+  // 📍 Kullanıcının mevcut konumunu al ve ev konumu olarak kaydet
   const saveHomeLocation = async () => {
     try {
-      const location = await Location.getCurrentPositionAsync({});
-      setHomeLocation(location.coords);
-      Alert.alert('Başarılı', 'Ev konumu kaydedildi!');
+      let location = await Location.getCurrentPositionAsync({});
+      const { latitude, longitude } = location.coords;
+      setHomeLocation({ latitude, longitude });
+      Alert.alert("Ev Konumu Kaydedildi", "Ev konumunuz başarıyla kaydedildi!");
+      
+      // Konum kaydedildikten sonra otomatik takibi başlat
+      startLocationTracking();
     } catch (error) {
-      Alert.alert('Hata', 'Konum alınamadı');
+      Alert.alert("Hata", "Konum alınamadı: " + error.message);
+    }
+  };
+
+  // Yeni bir fonksiyon ekleyelim
+  const startLocationTracking = async () => {
+    try {
+      const subscription = await Location.watchPositionAsync(
+        {
+          accuracy: Location.Accuracy.Balanced,
+          timeInterval: 5000, // 5 saniyede bir kontrol et
+          distanceInterval: 10 // 10 metrede bir güncelle
+        },
+        (location) => {
+          const { latitude, longitude } = location.coords;
+          const distance = getDistanceFromLatLonInMeters(
+            homeLocation.latitude,
+            homeLocation.longitude,
+            latitude,
+            longitude
+          );
+
+          // 50 metre uzaklaşınca bildirim gönder
+          if (distance >= 50) {
+            sendNotification();
+            Vibration.vibrate(1000);
+          }
+        }
+      );
+
+      setLocationSubscription(subscription);
+      setIsTracking(true);
+    } catch (error) {
+      Alert.alert("Hata", "Konum takibi başlatılamadı: " + error.message);
+    }
+  };
+
+  // 📏 İki nokta arasındaki mesafeyi hesapla (Haversine Formülü)
+  const getDistanceFromLatLonInMeters = (lat1, lon1, lat2, lon2) => {
+    const R = 6371e3;
+    const φ1 = (lat1 * Math.PI) / 180;
+    const φ2 = (lat2 * Math.PI) / 180;
+    const Δφ = ((lat2 - lat1) * Math.PI) / 180;
+    const Δλ = ((lon2 - lon1) * Math.PI) / 180;
+
+    const a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
+              Math.cos(φ1) * Math.cos(φ2) * 
+              Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+    return R * c;
+  };
+
+  // 📩 Bildirim Gönder
+  const sendNotification = async () => {
+  try {
+      await Notifications.scheduleNotificationAsync({
+      content: {
+        title: "Eşyalarını Aldın mı?",
+        body: `${selectedItems.length > 0 ? 
+            `Seçili eşyalar: ${selectedItems.join(', ')}` : 
+            'Hiç eşya seçmedin!'}`,
+        sound: 'default',
+          priority: Notifications.AndroidNotificationPriority.HIGH,
+          data: { 
+            distance: distance,
+            timestamp: new Date().getTime() 
+          },
+      },
+      trigger: null // Anlık bildirim için null kullan
+      });
+    } catch (error) {
+      console.error('Bildirim gönderilemedi:', error);
+      Alert.alert(
+        "Bildirim Hatası", 
+        "Bildirim gönderilemedi. Lütfen izinleri kontrol edin."
+      );
+    }
+  };
+
+  const addCustomItem = () => {
+    if (customItem.trim()) {
+      if (items.includes(customItem.trim())) {
+        Alert.alert("Hata", "Bu eşya zaten listede mevcut!");
+        return;
+      }
+      setItems(prevItems => [...prevItems, customItem.trim()]);
+      setCustomItem("");
     }
   };
 
   return (
     <View style={styles.container}>
-      <TouchableOpacity 
-        style={styles.button} 
-        onPress={saveHomeLocation}
-      >
-        <Text style={styles.buttonText}>Ev Konumunu Kaydet</Text>
-      </TouchableOpacity>
+      <Text style={styles.title}>Unutma! Yanına al:</Text>
+
+      <FlatList
+        data={items}
+        renderItem={({ item }) => (
+          <TouchableOpacity
+            style={[
+              styles.itemContainer,
+              selectedItems.includes(item) && styles.selectedItem,
+            ]}
+            onPress={() =>
+              setSelectedItems(prev =>
+                prev.includes(item) ? prev.filter(i => i !== item) : [...prev, item]
+              )
+            }
+          >
+            <Text style={styles.itemText}>{item}</Text>
+            {selectedItems.includes(item) && <Text style={styles.checkIcon}>✔️</Text>}
+          </TouchableOpacity>
+        )}
+        keyExtractor={(item, index) => item + index.toString()}
+      />
       
-      <Text style={styles.text}>
-        Eve olan uzaklık: {Math.round(currentDistance)} metre
-      </Text>
+
+      <TextInput
+        value={customItem}
+        onChangeText={setCustomItem}
+        placeholder="Yeni eşya ekle..."
+        style={styles.input}
+      />
+
+      <TouchableOpacity style={styles.addButton} onPress={addCustomItem}>
+        <Text style={styles.addButtonText}>+ Ürün Ekle</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity style={styles.homeButton} onPress={saveHomeLocation}>
+        <Text style={styles.buttonText}>🏠 Ev Konumunu Kaydet</Text>
+      </TouchableOpacity>
     </View>
   );
-}
+};
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 20,
-  },
-  button: {
-    backgroundColor: '#007AFF',
-    padding: 15,
-    borderRadius: 10,
-    width: '100%',
-    alignItems: 'center',
-  },
-  buttonText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  text: {
-    marginTop: 20,
-    fontSize: 16,
-  },
+  container: { flex: 1, padding: 20, backgroundColor: "#FAF9F6" },
+  title: { fontSize: 24, fontWeight: "bold", textAlign: "center", marginBottom: 20 },
+  input: { borderWidth: 1, borderColor: "#aaa", borderRadius: 10, padding: 12, marginBottom: 12 },
+  addButton: { backgroundColor: "#007BFF", padding: 12, borderRadius: 10, alignItems: "center" },
+  homeButton: { backgroundColor: "#28A745", padding: 12, borderRadius: 10, alignItems: "center", marginTop: 10 },
+  buttonText: { color: "#fff", fontSize: 16, fontWeight: "bold" },
+  itemContainer: { flexDirection: "row", justifyContent: "space-between", padding: 12, borderRadius: 8, backgroundColor: "#fff", marginBottom: 8 },
+  selectedItem: { backgroundColor: "#DFF6DD" },
+  itemText: { fontSize: 18 },
+  checkIcon: { fontSize: 18, color: "green" },
 });
+
+export default HomeScreen;
