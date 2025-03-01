@@ -6,29 +6,18 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
-    "newArchEnabled": true,
     "splash": {
       "image": "./assets/splash.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
-    "plugins": [
-      [
-        "expo-location",
-        {
-          "locationAlwaysAndWhenInUsePermission": "Konumunuzu takip etmek için izin gerekli"
-        }
-      ],
-      [
-        "expo-notifications"
-      ]
-    ],
     "assetBundlePatterns": [
       "**/*"
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.yourcompany.esyahatirla",
+      "bundleIdentifier": "com.mertbolukbasi.esyahatirla",
+      "buildNumber": "1.0.0",
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "Konumunuzu takip etmek için gerekli",
         "NSLocationAlwaysAndWhenInUseUsageDescription": "Arka planda konum takibi için gerekli",
@@ -41,7 +30,7 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#FFFFFF"
       },
-      "package": "com.yourcompany.esyahatirla",
+      "package": "com.mertbolukbasi.esyahatirla",
       "permissions": [
         "ACCESS_COARSE_LOCATION",
         "ACCESS_FINE_LOCATION"
@@ -49,6 +38,29 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/notification-icon.png",
+          "color": "#ffffff"
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "EsyaHatirla uygulaması konumunuzu takip etmek için konum bilgisine ihtiyaç duyar."
+        }
+      ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "esyahatirla"
+      }
+    },
+    "experiments": {
+      "newArchEnabled": false
     }
   }
 }

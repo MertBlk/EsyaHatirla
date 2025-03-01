@@ -1,5 +1,5 @@
 import { useState, useEffect,useCallback } from "react";
-import { View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet, Alert, Vibration } from "react-native";
+import { View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet, Alert, Vibration, Modal } from "react-native";
 import * as Location from 'expo-location';
 import * as Notifications from 'expo-notifications';
 import NetInfo from "@react-native-community/netinfo";
@@ -8,7 +8,7 @@ const HomeScreen = () => {
   const initialItems = [
     "🔑 Anahtar", "👝 Cüzdan", "🎧 Kulaklık", "📱 Telefon", "🏠 Ev Kartı",
     "💳 Banka Kartı", "🎟️ Toplu Taşıma Kartı", "🔋 Powerbank", "⌚ Akıllı Saat",
-    "🕶️ Güneş Gözlüğü", "💄 Ruj", "🚬 Sigara / Çakmak", "📚 Defter / Kitap",
+    "🕶️ Güneş Gözlüğü", "🚬 Sigara / Çakmak", "📚 Defter / Kitap",
     "🩹 İlaç", "🧥 Mont / Şemsiye", "🥤 Su Şişesi", "🎫 Kimlik / Pasaport",
     "🔑 Araba Anahtarı"
   ];
@@ -19,6 +19,7 @@ const HomeScreen = () => {
   const [homeLocation, setHomeLocation] = useState(null);
   const [locationSubscription, setLocationSubscription] = useState(null);
   const [isTracking, setIsTracking] = useState(false); // State ekleyin
+  const [isModalVisible, setModalVisible] = useState(false);
 
   useEffect(() => {
     checkInternetConnection();
@@ -245,6 +246,36 @@ const HomeScreen = () => {
     }
   };
 
+  const sendAlert = async () => {
+    try {
+      // Titreşim paterni: 500ms açık, 200ms kapalı, 500ms açık
+      Vibration.vibrate([500, 200, 500]);
+      
+      // Sesli uyarı için özel ses ekleyin
+      await Notifications.scheduleNotificationAsync({
+        content: {
+          title: "⚠️ Dikkat! Evden Uzaklaşıyorsun!",
+          body: `${selectedItems.length} eşyan seçili. Kontrol et!`,
+          sound: 'notification.wav', // özel ses dosyası
+          priority: 'high',
+        },
+        trigger: null,
+      });
+    } catch (error) {
+      console.error('Uyarı hatası:', error);
+    }
+  };
+
+  const checkDistance = (distance) => {
+    if (distance >= 50 && distance < 100) {
+      sendAlert("İlk Uyarı: Evden uzaklaşıyorsun!");
+    } else if (distance >= 100 && distance < 200) {
+      sendAlert("Son Uyarı: Eşyalarını kontrol et!");
+    } else if (distance >= 200) {
+      sendAlert("Kritik Uyarı: Çok uzaklaştın!");
+    }
+  };
+
   const addCustomItem = () => {
     if (customItem.trim()) {
       if (items.includes(customItem.trim())) {
@@ -255,6 +286,30 @@ const HomeScreen = () => {
       setCustomItem("");
     }
   };
+
+  const WarningModal = () => (
+    <Modal
+      visible={isModalVisible}
+      transparent={true}
+      animationType="slide"
+    >
+      <View style={styles.modalContainer}>
+        <Text style={styles.modalTitle}>⚠️ Eşya Kontrol Listesi</Text>
+        {selectedItems.map(item => (
+          <View key={item} style={styles.checklistItem}>
+            <Text style={styles.itemText}>{item}</Text>
+            <CheckBox value={false} onValueChange={() => {}} />
+          </View>
+        ))}
+        <TouchableOpacity 
+          style={styles.confirmButton}
+          onPress={() => setModalVisible(false)}
+        >
+          <Text style={styles.buttonText}>Kontrol Ettim</Text>
+        </TouchableOpacity>
+      </View>
+    </Modal>
+  );
 
   return (
     <View style={styles.container}>
@@ -296,6 +351,8 @@ const HomeScreen = () => {
       <TouchableOpacity style={styles.homeButton} onPress={saveHomeLocation}>
         <Text style={styles.buttonText}>🏠 Ev Konumunu Kaydet</Text>
       </TouchableOpacity>
+
+      <WarningModal />
     </View>
   );
 };
@@ -311,6 +368,10 @@ const styles = StyleSheet.create({
   selectedItem: { backgroundColor: "#DFF6DD" },
   itemText: { fontSize: 18 },
   checkIcon: { fontSize: 18, color: "green" },
+  modalContainer: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "rgba(0,0,0,0.5)" },
+  modalTitle: { fontSize: 24, fontWeight: "bold", marginBottom: 20, color: "#fff" },
+  checklistItem: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", backgroundColor: "#fff", padding: 10, borderRadius: 10, marginBottom: 10 },
+  confirmButton: { backgroundColor: "#28A745", padding: 12, borderRadius: 10, alignItems: "center", marginTop: 10 },
 });
 
 export default HomeScreen;
