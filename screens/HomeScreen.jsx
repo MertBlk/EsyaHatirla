@@ -1,5 +1,6 @@
-import { useState, useEffect,useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet, Alert, Vibration, Modal } from "react-native";
+import CheckBox from '@react-native-community/checkbox';
 import * as Location from 'expo-location';
 import * as Notifications from 'expo-notifications';
 import NetInfo from "@react-native-community/netinfo";
@@ -298,7 +299,12 @@ const HomeScreen = () => {
         {selectedItems.map(item => (
           <View key={item} style={styles.checklistItem}>
             <Text style={styles.itemText}>{item}</Text>
-            <CheckBox value={false} onValueChange={() => {}} />
+            <CheckBox
+              value={false}
+              onValueChange={() => {}}
+              tintColors={{ true: '#34C759', false: '#767577' }}
+              style={styles.checkbox}
+            />
           </View>
         ))}
         <TouchableOpacity 
@@ -368,10 +374,43 @@ const styles = StyleSheet.create({
   selectedItem: { backgroundColor: "#DFF6DD" },
   itemText: { fontSize: 18 },
   checkIcon: { fontSize: 18, color: "green" },
-  modalContainer: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "rgba(0,0,0,0.5)" },
-  modalTitle: { fontSize: 24, fontWeight: "bold", marginBottom: 20, color: "#fff" },
-  checklistItem: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", backgroundColor: "#fff", padding: 10, borderRadius: 10, marginBottom: 10 },
-  confirmButton: { backgroundColor: "#28A745", padding: 12, borderRadius: 10, alignItems: "center", marginTop: 10 },
+  checkbox: {
+    width: 24,
+    height: 24,
+  },
+  modalContainer: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    padding: 20,
+  },
+  modalTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#FF3B30',
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  checklistItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 10,
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    marginBottom: 10,
+  },
+  confirmButton: {
+    backgroundColor: '#34C759',
+    padding: 15,
+    borderRadius: 10,
+    alignItems: 'center',
+    marginTop: 20,
+  },
+  checkbox: {
+    width: 20,
+    height: 20,
+  },
 });
 
 export default HomeScreen;
