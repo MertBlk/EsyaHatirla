@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet, Alert, Vibration, Modal } from "react-native";
+import { View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet, Alert, Vibration, Modal, ScrollView } from "react-native";
 import CheckBox from '@react-native-community/checkbox';
 import * as Location from 'expo-location';
 import * as Notifications from 'expo-notifications';
@@ -21,6 +21,41 @@ const HomeScreen = () => {
   const [locationSubscription, setLocationSubscription] = useState(null);
   const [isTracking, setIsTracking] = useState(false); // State ekleyin
   const [isModalVisible, setModalVisible] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('Tümü');
+
+  const categorizedItems = {
+    'Günlük': [
+      "🔑 Anahtar",
+      "👝 Cüzdan",
+      "📱 Telefon",
+      "🔋 Powerbank",
+      "⌚ Akıllı Saat"
+    ],
+    'İş/Okul': [
+      "💼 Laptop",
+      "📚 Defter / Kitap",
+      "✏️ Kalem",
+      "🎧 Kulaklık"
+    ],
+    'Spor': [
+      "👟 Spor Ayakkabı",
+      "🎽 Spor Kıyafeti",
+      "🧴 Havlu",
+      "🥤 Su Şişesi"
+    ],
+    'Seyahat': [
+      "🎫 Kimlik / Pasaport",
+      "🧳 Valiz",
+      "🔌 Şarj Aleti",
+      "💳 Banka Kartı"
+    ],
+    'Sağlık': [
+      "🩹 İlaç",
+      "😷 Maske",
+      "🧴 El Dezenfektanı"
+    ]
+  };
 
   useEffect(() => {
     checkInternetConnection();
@@ -156,7 +191,6 @@ const HomeScreen = () => {
         {
           accuracy: Location.Accuracy.Balanced,
           timeInterval: 5000, // 5 saniyede bir kontrol et
-          distanceInterval: 10 // 10 metrede bir güncelle
         },
         (location) => {
           const { latitude, longitude } = location.coords;
@@ -207,17 +241,25 @@ const HomeScreen = () => {
   // 📩 Bildirim Gönder
   const sendNotification = async () => {
     try {
-      // Önce bildirim izinlerini kontrol edelim
       const { status } = await Notifications.getPermissionsAsync();
       if (status !== 'granted') {
-        Alert.alert(
-          "İzin Hatası",
-          "Bildirim göndermek için izin gerekiyor"
-        );
+        Alert.alert("İzin Hatası", "Bildirim göndermek için izin gerekiyor");
         return;
       }
 
-      // Bildirim ayarlarını yapılandır
+      // Bildirim içeriğini hazırla
+      const notificationContent = {
+        title: "Eşyalarını Aldın mı?",
+        body: selectedItems && selectedItems.length > 0 
+          ? `Unutma! ${selectedItems.join(', ')}` 
+          : 'Hiç eşya seçmedin!',
+        sound: 'default',
+        priority: 'high',
+      };
+
+      console.log('Seçili eşyalar:', selectedItems); // Debug için log
+      console.log('Bildirim içeriği:', notificationContent); // Debug için log
+
       await Notifications.setNotificationHandler({
         handleNotification: async () => ({
           shouldShowAlert: true,
@@ -226,24 +268,14 @@ const HomeScreen = () => {
         }),
       });
 
-      // Bildirimi gönder
       await Notifications.scheduleNotificationAsync({
-        content: {
-          title: "Eşyalarını Aldın mı?",
-          body: selectedItems.length > 0 
-            ? `Seçili eşyalar: ${selectedItems.join(', ')}`
-            : 'Hiç eşya seçmedin!',
-          sound: 'default',
-        },
-        trigger: null // Anlık bildirim için
+        content: notificationContent,
+        trigger: null
       });
 
     } catch (error) {
       console.error('Bildirim hatası:', error);
-      Alert.alert(
-        "Bildirim Hatası",
-        "Bildirim gönderilemedi: " + error.message
-      );
+      Alert.alert("Bildirim Hatası", "Bildirim gönderilemedi: " + error.message);
     }
   };
 
@@ -279,12 +311,25 @@ const HomeScreen = () => {
 
   const addCustomItem = () => {
     if (customItem.trim()) {
-      if (items.includes(customItem.trim())) {
-        Alert.alert("Hata", "Bu eşya zaten listede mevcut!");
-        return;
+      const newItem = customItem.trim();
+      
+      // Seçili kategoriye ekle
+      if (selectedCategory !== 'Tümü') {
+        categorizedItems[selectedCategory] = [
+          ...categorizedItems[selectedCategory],
+          newItem
+        ];
+      } else {
+        // Varsayılan olarak Günlük kategorisine ekle
+        categorizedItems['Günlük'] = [
+          ...categorizedItems['Günlük'],
+          newItem
+        ];
       }
-      setItems(prevItems => [...prevItems, customItem.trim()]);
+      
       setCustomItem("");
+      // State'i güncelle
+      forceUpdate({}); // Component'i yeniden render etmek için
     }
   };
 
@@ -317,12 +362,53 @@ const HomeScreen = () => {
     </Modal>
   );
 
+  const CategorySelector = () => (
+    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoryContainer}>
+      <TouchableOpacity
+        style={[
+          styles.categoryButton,
+          selectedCategory === 'Tümü' && styles.selectedCategoryButton
+        ]}
+        onPress={() => setSelectedCategory('Tümü')}
+      >
+        <Text style={[
+          styles.categoryButtonText,
+          selectedCategory === 'Tümü' && styles.selectedCategoryText
+        ]}>📋 Tümü</Text>
+      </TouchableOpacity>
+      {Object.keys(categorizedItems).map(category => (
+        <TouchableOpacity
+          key={category}
+          style={[
+            styles.categoryButton,
+            selectedCategory === category && styles.selectedCategoryButton
+          ]}
+          onPress={() => setSelectedCategory(category)}
+        >
+          <Text style={[
+            styles.categoryButtonText,
+            selectedCategory === category && styles.selectedCategoryText
+          ]}>{category}</Text>
+        </TouchableOpacity>
+      ))}
+    </ScrollView>
+  );
+
+  const getFilteredItems = () => {
+    if (selectedCategory === 'Tümü') {
+      return Object.values(categorizedItems).flat();
+    }
+    return categorizedItems[selectedCategory] || [];
+  };
+
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Unutma! Yanına al:</Text>
 
+      <CategorySelector />
+
       <FlatList
-        data={items}
+        data={getFilteredItems()}
         renderItem={({ item }) => (
           <TouchableOpacity
             style={[
@@ -411,6 +497,32 @@ const styles = StyleSheet.create({
     width: 20,
     height: 20,
   },
+  // styles içine ekleyin
+categoryContainer: {
+  marginBottom: 15,
+  marginTop: 10,
+},
+categoryButton: {
+  paddingHorizontal: 16,
+  paddingVertical: 8,
+  marginRight: 8,
+  borderRadius: 20,
+  backgroundColor: '#f0f0f0',
+  borderWidth: 1,
+  borderColor: '#ddd',
+},
+selectedCategoryButton: {
+  backgroundColor: '#007BFF',
+  borderColor: '#007BFF',
+},
+categoryButtonText: {
+  fontSize: 14,
+  color: '#333',
+},
+selectedCategoryText: {
+  color: '#fff',
+  fontWeight: 'bold',
+},
 });
 
 export default HomeScreen;
