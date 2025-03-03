@@ -190,7 +190,8 @@ const HomeScreen = () => {
       const subscription = await Location.watchPositionAsync(
         {
           accuracy: Location.Accuracy.Balanced,
-          timeInterval: 5000, // 5 saniyede bir kontrol et
+          timeInterval: 10000, // 10 saniyede bir kontrol et
+          distanceInterval: 10, // 10 metrede bir kontrol et
         },
         (location) => {
           const { latitude, longitude } = location.coords;
@@ -224,18 +225,18 @@ const HomeScreen = () => {
 
   // 📏 İki nokta arasındaki mesafeyi hesapla (Haversine Formülü)
   const getDistanceFromLatLonInMeters = (lat1, lon1, lat2, lon2) => {
-    const R = 6371e3;
+    const R = 6371e3; // Dünya'nın yarıçapı (metre)
     const φ1 = (lat1 * Math.PI) / 180;
     const φ2 = (lat2 * Math.PI) / 180;
     const Δφ = ((lat2 - lat1) * Math.PI) / 180;
-    const Δλ = ((lon1 - lat1) * Math.PI) / 180;
-
+    const Δλ = ((lon2 - lon1) * Math.PI) / 180; // Burası düzeltildi
+  
     const a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
-              Math.cos(φ1) * Math.cos(φ2) * 
-              Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
+             Math.cos(φ1) * Math.cos(φ2) * 
+             Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-
-    return R * c;
+  
+    return R * c; // Mesafe metre cinsinden
   };
 
   // 📩 Bildirim Gönder
@@ -450,23 +451,142 @@ const HomeScreen = () => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, backgroundColor: "#FAF9F6" },
-  title: { fontSize: 24, fontWeight: "bold", textAlign: "center", marginBottom: 20 },
-  input: { borderWidth: 1, borderColor: "#aaa", borderRadius: 10, padding: 12, marginBottom: 12 },
-  addButton: { backgroundColor: "#007BFF", padding: 12, borderRadius: 10, alignItems: "center" },
-  homeButton: { backgroundColor: "#28A745", padding: 12, borderRadius: 10, alignItems: "center", marginTop: 10 },
-  buttonText: { color: "#fff", fontSize: 16, fontWeight: "bold" },
-  itemContainer: { flexDirection: "row", justifyContent: "space-between", padding: 12, borderRadius: 8, backgroundColor: "#fff", marginBottom: 8 },
-  selectedItem: { backgroundColor: "#DFF6DD" },
-  itemText: { fontSize: 18 },
-  checkIcon: { fontSize: 18, color: "green" },
-  checkbox: {
-    width: 24,
-    height: 24,
+  // Ana container stil güncellemeleri
+  container: { 
+    flex: 1, 
+    padding: 16, 
+    backgroundColor: "#F5F5F5"
   },
+  
+  // Başlık stil güncellemeleri
+  title: { 
+    fontSize: 28, 
+    fontWeight: "bold", 
+    color: "#2C3E50",
+    marginBottom: 24,
+    marginTop: 12
+  },
+
+  // Kategori seçici stil güncellemeleri
+  categoryContainer: {
+    marginBottom: 16,
+    paddingVertical: 4,
+    height: 70, // Daha küçük yükseklik
+  },
+  categoryButton: {
+    width: 100, // Sabit genişlik
+    height: 36, // Sabit yükseklik
+    marginRight: 8,
+    borderRadius: 18,
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  selectedCategoryButton: {
+    backgroundColor: '#007AFF',
+    borderColor: '#007AFF',
+  },
+  categoryButtonText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#666',
+  },
+  selectedCategoryText: {
+    color: '#fff',
+    fontWeight: '600',
+  },
+
+  // Eşya listesi stil güncellemeleri
+  itemContainer: { 
+    flexDirection: "row", 
+    alignItems: "center",
+    justifyContent: "space-between", 
+    padding: 16,
+    borderRadius: 12,
+    backgroundColor: "#fff",
+    marginBottom: 10,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 3,
+  },
+  selectedItem: { 
+    backgroundColor: "#E8F5E9",
+    borderWidth: 1,
+    borderColor: "#4CAF50"
+  },
+  itemText: { 
+    fontSize: 16,
+    fontWeight: "500",
+    color: "#333"
+  },
+  checkIcon: { 
+    fontSize: 20, 
+    color: "#4CAF50"
+  },
+
+  // Input ve buton stil güncellemeleri
+  input: { 
+    backgroundColor: "#fff",
+    borderWidth: 1, 
+    borderColor: "#E0E0E0", 
+    borderRadius: 12, 
+    padding: 15,
+    marginBottom: 16,
+    fontSize: 16,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  addButton: { 
+    backgroundColor: "#007AFF",
+    padding: 16, 
+    borderRadius: 12, 
+    marginBottom: 12,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.2,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  homeButton: { 
+    backgroundColor: "#34C759", 
+    padding: 16, 
+    borderRadius: 12,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.2,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  buttonText: { 
+    color: "#fff", 
+    fontSize: 16, 
+    fontWeight: "600",
+    textAlign: "center"
+  },
+
+  // Modal stil güncellemeleri
   modalContainer: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    backgroundColor: 'rgba(0,0,0,0.6)',
     justifyContent: 'center',
     padding: 20,
   },
@@ -475,54 +595,24 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#FF3B30',
     textAlign: 'center',
-    marginBottom: 20,
+    marginBottom: 24,
   },
   checklistItem: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 10,
+    padding: 16,
     backgroundColor: '#fff',
-    borderRadius: 8,
-    marginBottom: 10,
+    borderRadius: 12,
+    marginBottom: 12,
   },
   confirmButton: {
     backgroundColor: '#34C759',
-    padding: 15,
-    borderRadius: 10,
+    padding: 16,
+    borderRadius: 12,
     alignItems: 'center',
-    marginTop: 20,
-  },
-  checkbox: {
-    width: 20,
-    height: 20,
-  },
-  // styles içine ekleyin
-categoryContainer: {
-  marginBottom: 15,
-  marginTop: 10,
-},
-categoryButton: {
-  paddingHorizontal: 16,
-  paddingVertical: 8,
-  marginRight: 8,
-  borderRadius: 20,
-  backgroundColor: '#f0f0f0',
-  borderWidth: 1,
-  borderColor: '#ddd',
-},
-selectedCategoryButton: {
-  backgroundColor: '#007BFF',
-  borderColor: '#007BFF',
-},
-categoryButtonText: {
-  fontSize: 14,
-  color: '#333',
-},
-selectedCategoryText: {
-  color: '#fff',
-  fontWeight: 'bold',
-},
+    marginTop: 24,
+  }
 });
 
 export default HomeScreen;
