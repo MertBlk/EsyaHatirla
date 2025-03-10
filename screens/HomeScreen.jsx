@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet, Alert, Vibration, Modal, ScrollView } from "react-native";
+import { View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet, Alert, Vibration, Modal, ScrollView, StatusBar } from "react-native";
 import CheckBox from '@react-native-community/checkbox';
 import * as Location from 'expo-location';
 import * as Notifications from 'expo-notifications';
@@ -52,7 +52,7 @@ const HomeScreen = () => {
     ],
     'Sağlık': [
       "🩹 İlaç",
-      "😷 Maske",
+      
       "🧴 El Dezenfektanı"
     ]
   };
@@ -402,11 +402,27 @@ const HomeScreen = () => {
     return categorizedItems[selectedCategory] || [];
   };
 
+  const StatsCard = () => (
+    <View style={styles.statsCard}>
+      <View style={styles.statItem}>
+        <Text style={styles.statNumber}>{selectedItems.length}</Text>
+        <Text style={styles.statLabel}>Seçili</Text>
+      </View>
+      <View style={styles.statDivider} />
+      <View style={styles.statItem}>
+        <Text style={styles.statNumber}>{getFilteredItems().length}</Text>
+        <Text style={styles.statLabel}>Toplam</Text>
+      </View>
+    </View>
+  );
+
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Unutma! Yanına al:</Text>
 
       <CategorySelector />
+
+      <StatsCard />
 
       <FlatList
         data={getFilteredItems()}
@@ -551,6 +567,7 @@ const styles = StyleSheet.create({
   },
   addButton: { 
     backgroundColor: "#007AFF",
+    color: "#fff",
     padding: 16, 
     borderRadius: 12, 
     marginBottom: 12,
@@ -577,6 +594,12 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   buttonText: { 
+    color: "#fff", 
+    fontSize: 16, 
+    fontWeight: "600",
+    textAlign: "center"
+  },
+  addButtonText: { 
     color: "#fff", 
     fontSize: 16, 
     fontWeight: "600",
@@ -612,7 +635,40 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     alignItems: 'center',
     marginTop: 24,
-  }
+  },
+
+  // Stil eklemeleri
+  statsCard: {
+    flexDirection: 'row',
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  statItem: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  statNumber: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#007AFF',
+  },
+  statLabel: {
+    fontSize: 14,
+    color: '#666',
+    marginTop: 4,
+  },
+  statDivider: {
+    width: 1,
+    backgroundColor: '#E0E0E0',
+    marginHorizontal: 16,
+  },
 });
 
 export default HomeScreen;
