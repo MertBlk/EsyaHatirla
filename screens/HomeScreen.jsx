@@ -57,6 +57,15 @@ const HomeScreen = () => {
     ]
   };
 
+  const categoryIcons = {
+    'Tümü': '📋',
+    'Günlük': '🌞',
+    'İş/Okul': '💼',
+    'Spor': '🏃',
+    'Seyahat': '✈️',
+    'Sağlık': '💊'
+  };
+
   useEffect(() => {
     checkInternetConnection();
     requestPermissions();
@@ -375,7 +384,9 @@ const HomeScreen = () => {
         <Text style={[
           styles.categoryButtonText,
           selectedCategory === 'Tümü' && styles.selectedCategoryText
-        ]}>📋 Tümü</Text>
+        ]}>
+          {categoryIcons['Tümü']} Tümü
+        </Text>
       </TouchableOpacity>
       {Object.keys(categorizedItems).map(category => (
         <TouchableOpacity
@@ -389,7 +400,9 @@ const HomeScreen = () => {
           <Text style={[
             styles.categoryButtonText,
             selectedCategory === category && styles.selectedCategoryText
-          ]}>{category}</Text>
+          ]}>
+            {categoryIcons[category]} {category}
+          </Text>
         </TouchableOpacity>
       ))}
     </ScrollView>
@@ -643,6 +656,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderRadius: 16,
     padding: 16,
+    
     marginBottom: 16,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
