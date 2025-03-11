@@ -17,7 +17,7 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.mertbolukbasi.esyahatirla",
+      "bundleIdentifier": "com.yourcompany.esyahatirla",
       "buildNumber": "1.0.0",
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "Konumunuzu takip etmek için gerekli",
@@ -45,7 +45,8 @@
         "expo-notifications",
         {
           "icon": "./assets/notification-icon.png",
-          "color": "#ffffff"
+          "color": "#ffffff",
+          "sounds": ["./assets/notification.wav"]
         }
       ],
       [

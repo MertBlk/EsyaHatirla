@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet, Alert, Vibration, Modal, ScrollView, StatusBar } from "react-native";
+import { View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet, Alert, Vibration, Modal, ScrollView, StatusBar, ActivityIndicator } from "react-native";
 import CheckBox from '@react-native-community/checkbox';
 import * as Location from 'expo-location';
 import * as Notifications from 'expo-notifications';
@@ -23,6 +23,7 @@ const HomeScreen = () => {
   const [isModalVisible, setModalVisible] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('Tümü');
+  const [isLoading, setIsLoading] = useState(false); // Yükleme durumu için state ekleyin
 
   const categorizedItems = {
     'Günlük': [
@@ -84,6 +85,7 @@ const HomeScreen = () => {
           shouldShowAlert: true,
           shouldPlaySound: true,
           shouldSetBadge: false,
+          priority: 'high'
         }),
       });
     };
@@ -458,6 +460,11 @@ const HomeScreen = () => {
         keyExtractor={(item, index) => item + index.toString()}
       />
       
+      {isLoading && ( // Yükleme göstergesi
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#007AFF" />
+        </View>
+      )}
 
       <TextInput
         value={customItem}
@@ -682,6 +689,16 @@ const styles = StyleSheet.create({
     width: 1,
     backgroundColor: '#E0E0E0',
     marginHorizontal: 16,
+  },
+  loadingContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(255,255,255,0.8)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });
 
