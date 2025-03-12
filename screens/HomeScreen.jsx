@@ -374,40 +374,47 @@ const HomeScreen = () => {
     </Modal>
   );
 
+  // CategorySelector bileşenini güncelle
   const CategorySelector = () => (
-    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoryContainer}>
-      <TouchableOpacity
-        style={[
-          styles.categoryButton,
-          selectedCategory === 'Tümü' && styles.selectedCategoryButton
-        ]}
-        onPress={() => setSelectedCategory('Tümü')}
+    <View style={styles.categoryWrapper}>
+      <ScrollView 
+        horizontal 
+        showsHorizontalScrollIndicator={false} 
+        contentContainerStyle={styles.categoryScrollContent}
       >
-        <Text style={[
-          styles.categoryButtonText,
-          selectedCategory === 'Tümü' && styles.selectedCategoryText
-        ]}>
-          {categoryIcons['Tümü']} Tümü
-        </Text>
-      </TouchableOpacity>
-      {Object.keys(categorizedItems).map(category => (
         <TouchableOpacity
-          key={category}
           style={[
             styles.categoryButton,
-            selectedCategory === category && styles.selectedCategoryButton
+            selectedCategory === 'Tümü' && styles.selectedCategoryButton
           ]}
-          onPress={() => setSelectedCategory(category)}
+          onPress={() => setSelectedCategory('Tümü')}
         >
           <Text style={[
             styles.categoryButtonText,
-            selectedCategory === category && styles.selectedCategoryText
+            selectedCategory === 'Tümü' && styles.selectedCategoryText
           ]}>
-            {categoryIcons[category]} {category}
+            {categoryIcons['Tümü']} Tümü
           </Text>
         </TouchableOpacity>
-      ))}
-    </ScrollView>
+        {Object.keys(categorizedItems).map(category => (
+          <TouchableOpacity
+            key={category}
+            style={[
+              styles.categoryButton,
+              selectedCategory === category && styles.selectedCategoryButton
+            ]}
+            onPress={() => setSelectedCategory(category)}
+          >
+            <Text style={[
+              styles.categoryButtonText,
+              selectedCategory === category && styles.selectedCategoryText
+            ]}>
+              {categoryIcons[category]} {category}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </ScrollView>
+    </View>
   );
 
   const getFilteredItems = () => {
@@ -433,7 +440,7 @@ const HomeScreen = () => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Unutma! Yanına al:</Text>
+      <Text style={styles.title}>Unutma! Yanına al</Text>
 
       <CategorySelector />
 
@@ -490,7 +497,7 @@ const styles = StyleSheet.create({
   // Ana container stil güncellemeleri
   container: { 
     flex: 1, 
-    padding: 16, 
+    padding: 12, 
     backgroundColor: "#F5F5F5"
   },
   
@@ -504,14 +511,25 @@ const styles = StyleSheet.create({
   },
 
   // Kategori seçici stil güncellemeleri
-  categoryContainer: {
-    marginBottom: 16,
+  categoryWrapper: {
+    height: 44,
+    marginBottom: 8,
+  },
+  
+  categoryScrollContent: {
+    alignItems: 'center',
     paddingVertical: 4,
-    height: 70, // Daha küçük yükseklik
+  },
+  
+  categoryContainer: {
+    height: 40,
+    marginBottom: 8,
+    paddingVertical: 0,
+    height: 94, // Yüksekliği azalttık
   },
   categoryButton: {
-    width: 100, // Sabit genişlik
-    height: 36, // Sabit yükseklik
+    width: 100,
+    height: 36,
     marginRight: 8,
     borderRadius: 18,
     backgroundColor: '#fff',
@@ -519,6 +537,11 @@ const styles = StyleSheet.create({
     borderColor: '#E0E0E0',
     alignItems: 'center',
     justifyContent: 'center',
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
   },
   selectedCategoryButton: {
     backgroundColor: '#007AFF',
@@ -661,8 +684,18 @@ const styles = StyleSheet.create({
   statsCard: {
     flexDirection: 'row',
     backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 16,
+    borderRadius: 12,
+    padding: 8,
+    marginBottom: 8,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  statItem: {
+    flex: 1,
+    alignItems: 'center', 
     
     marginBottom: 16,
     shadowColor: "#000",
