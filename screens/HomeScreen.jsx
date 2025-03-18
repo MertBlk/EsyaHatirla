@@ -15,7 +15,7 @@ const HomeScreen = () => {
   ];
 
   const [items, setItems] = useState(initialItems);
-  const [customItem, setCustomItem] = useState("");
+  
   const [selectedItems, setSelectedItems] = useState([]);
   const [homeLocation, setHomeLocation] = useState(null);
   const [locationSubscription, setLocationSubscription] = useState(null);
@@ -321,29 +321,7 @@ const HomeScreen = () => {
     }
   };
 
-  const addCustomItem = () => {
-    if (customItem.trim()) {
-      const newItem = customItem.trim();
-      
-      // Seçili kategoriye ekle
-      if (selectedCategory !== 'Tümü') {
-        categorizedItems[selectedCategory] = [
-          ...categorizedItems[selectedCategory],
-          newItem
-        ];
-      } else {
-        // Varsayılan olarak Günlük kategorisine ekle
-        categorizedItems['Günlük'] = [
-          ...categorizedItems['Günlük'],
-          newItem
-        ];
-      }
-      
-      setCustomItem("");
-      // State'i güncelle
-      forceUpdate({}); // Component'i yeniden render etmek için
-    }
-  };
+  
 
   const WarningModal = () => (
     <Modal
@@ -473,16 +451,9 @@ const HomeScreen = () => {
         </View>
       )}
 
-      <TextInput
-        value={customItem}
-        onChangeText={setCustomItem}
-        placeholder="Yeni eşya ekle..."
-        style={styles.input}
-      />
+      
 
-      <TouchableOpacity style={styles.addButton} onPress={addCustomItem}>
-        <Text style={styles.addButtonText}>+ Ürün Ekle</Text>
-      </TouchableOpacity>
+      
 
       <TouchableOpacity style={styles.homeButton} onPress={saveHomeLocation}>
         <Text style={styles.buttonText}>🏠 Ev Konumunu Kaydet</Text>
