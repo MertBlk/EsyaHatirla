@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useColorScheme } from "react";
 import { View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet, Alert, Vibration, Modal, ScrollView, StatusBar, ActivityIndicator } from "react-native";
 import CheckBox from '@react-native-community/checkbox';
 import * as Location from 'expo-location';
@@ -32,6 +32,7 @@ const HomeScreen = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('Tümü');
   const [isLoading, setIsLoading] = useState(false); // Yükleme durumu için state ekleyin
+  const [isDarkMode, setIsDarkMode] = useState(true);
 
   const categorizedItems = {
   'Günlük': [
@@ -106,6 +107,23 @@ const HomeScreen = () => {
     'Spor': '🏃',
     'Seyahat': '✈️',
     'Sağlık': '💊'
+  };
+
+  const theme = {
+    dark: {
+      background: '#1C1C1E',
+      surface: '#2C2C2E',
+      text: '#FFFFFF',
+      textSecondary: '#EBEBF5',
+      border: '#3A3A3C'
+    },
+    light: {
+      background: '#F2F2F7',
+      surface: '#FFFFFF',
+      text: '#000000',
+      textSecondary: '#666666',
+      border: '#E5E5EA'
+    }
   };
 
   useEffect(() => {
@@ -457,10 +475,36 @@ const HomeScreen = () => {
     </View>
   );
 
-  return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Unutma! Yanına al</Text>
+  const ThemeToggle = () => (
+    <TouchableOpacity
+      style={[styles.homeButton, { backgroundColor: isDarkMode ? '#34C759' : '#007AFF' }]}
+      onPress={() => setIsDarkMode(!isDarkMode)}
+    >
+      <Text style={styles.buttonText}>
+        {isDarkMode ? '☀️ Açık Mod' : '🌙 Koyu Mod'}
+      </Text>
+    </TouchableOpacity>
+  );
 
+  const dynamicStyles = {
+    container: {
+      backgroundColor: isDarkMode ? theme.dark.background : theme.light.background
+    },
+    itemContainer: {
+      backgroundColor: isDarkMode ? theme.dark.surface : theme.light.surface,
+      borderColor: isDarkMode ? theme.dark.border : theme.light.border
+    },
+    text: {
+      color: isDarkMode ? theme.dark.text : theme.light.text
+    }
+  };
+
+  return (
+    <View style={[styles.container, dynamicStyles.container]}>
+      <Text style={[styles.title, dynamicStyles.text]}>Unutma! Yanına al</Text>
+      
+      <ThemeToggle /> {/* Tema değiştirme butonu */}
+      
       <CategorySelector />
 
       <StatsCard />
@@ -471,6 +515,7 @@ const HomeScreen = () => {
           <TouchableOpacity
             style={[
               styles.itemContainer,
+              dynamicStyles.itemContainer,
               selectedItems.includes(item) && styles.selectedItem,
             ]}
             onPress={() =>
@@ -479,7 +524,7 @@ const HomeScreen = () => {
               )
             }
           >
-            <Text style={styles.itemText}>{item}</Text>
+            <Text style={[styles.itemText, dynamicStyles.text]}>{item}</Text>
             {selectedItems.includes(item) && <Text style={styles.checkIcon}>✔️</Text>}
           </TouchableOpacity>
         )}
