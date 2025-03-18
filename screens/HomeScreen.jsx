@@ -11,7 +11,15 @@ const HomeScreen = () => {
     "💳 Banka Kartı", "🎟️ Toplu Taşıma Kartı", "🔋 Powerbank", "⌚ Akıllı Saat",
     "🕶️ Güneş Gözlüğü", "🚬 Sigara / Çakmak", "📚 Defter / Kitap",
     "🩹 İlaç", "🧥 Mont / Şemsiye", "🥤 Su Şişesi", "🎫 Kimlik / Pasaport",
-    "🔑 Araba Anahtarı"
+    "🔑 Araba Anahtarı", "🎵 Kulaklık Kılıfı", "🛍️ Alışveriş Çantası",
+    "💊 Vitamin / Takviye", "🧴 El Dezenfektanı / Kolonya", "🧻 Islak Mendil / Peçete",
+    "🍬 Sakız / Şekerleme", "🏋️‍♂️ Spor Eşyaları", "📝 Not Defteri / Yapışkan Notlar",
+    "🎟️ Otopark Kartı", "📮 Posta / Evrak / Fatura", "🧷 Küçük Dikiş Seti",
+    "🍏 Sağlıklı Atıştırmalık", "🕹️ Taşınabilir Oyun Konsolu", "🪪 Çalışma Kartı",
+    "🛏️ Yedek Çorap / İç Çamaşırı", "🧴 Dudak Koruyucu / Krem", "🕰️ Küçük Çalar Saat",
+    "🔦 El Feneri", "🔌 Şarj Kablosu", "🪥 Diş Fırçası / Macun", "🔖 Kitap Ayracı",
+    "🍫 Atıştırmalık", "🔑 Yedek Anahtar", "🖊️ Kalem", "🎨 Küçük Çizim Defteri",
+    "💼 Laptop / Tablet", "🔌 Taşınabilir Adaptör / Priz", "📂 USB Bellek / Hard Disk"
   ];
 
   const [items, setItems] = useState(initialItems);
@@ -26,37 +34,70 @@ const HomeScreen = () => {
   const [isLoading, setIsLoading] = useState(false); // Yükleme durumu için state ekleyin
 
   const categorizedItems = {
-    'Günlük': [
-      "🔑 Anahtar",
-      "👝 Cüzdan",
-      "📱 Telefon",
-      "🔋 Powerbank",
-      "⌚ Akıllı Saat"
-    ],
-    'İş/Okul': [
-      "💼 Laptop",
-      "📚 Defter / Kitap",
-      "✏️ Kalem",
-      "🎧 Kulaklık"
-    ],
-    'Spor': [
-      "👟 Spor Ayakkabı",
-      "🎽 Spor Kıyafeti",
-      "🧴 Havlu",
-      "🥤 Su Şişesi"
-    ],
-    'Seyahat': [
-      "🎫 Kimlik / Pasaport",
-      "🧳 Valiz",
-      "🔌 Şarj Aleti",
-      "💳 Banka Kartı"
-    ],
-    'Sağlık': [
-      "🩹 İlaç",
-      
-      "🧴 El Dezenfektanı"
-    ]
-  };
+  'Günlük': [
+    "🔑 Anahtar",
+    "👝 Cüzdan",
+    "📱 Telefon",
+    "🔋 Powerbank",
+    "⌚ Akıllı Saat",
+    "🕶️ Güneş Gözlüğü",
+    "🚬 Sigara / Çakmak",
+    "🥤 Su Şişesi",
+    "🔖 Kitap Ayracı",
+    "🎧 Kulaklık",
+  ],
+  'İş/Okul': [
+    "💼 Laptop",
+    "📚 Defter / Kitap",
+    "✏️ Kalem",
+    
+    "📂 USB Bellek / Hard Disk",
+    "📝 Not Defteri / Yapışkan Notlar",
+    "📮 Evrak / Dosya",
+    "🪪 Çalışma Kartı / Personel Kartı"
+  ],
+  'Spor': [
+    "👟 Spor Ayakkabı",
+    "🎽 Spor Kıyafeti",
+    "🧴 Havlu",
+    "🥤 Su Şişesi",
+    "🏋️‍♂️ Ağırlık Eldiveni",
+    "🍏 Sağlıklı Atıştırmalık",
+    "🎧 Spor İçin Kulaklık",
+    "🧦 Yedek Çorap"
+  ],
+  'Seyahat': [
+    "🎫 Kimlik / Pasaport",
+    "🧳 Valiz",
+    "🔌 Şarj Aleti",
+    "💳 Banka Kartı",
+    "📜 Uçuş / Otel Rezervasyon Belgeleri",
+    "🗺️ Harita / Navigasyon Cihazı",
+    "🧥 Mont / Şemsiye",
+    "🔦 El Feneri",
+    "💊 Seyahat İçin İlaçlar",
+    "📷 Fotoğraf Makinesi"
+  ],
+  'Sağlık': [
+    "🩹 İlaç",
+    "🧴 El Dezenfektanı",
+    "💊 Vitamin / Takviye",
+    "🧻 Islak Mendil / Peçete",
+    "🩹 Yara Bandı / Küçük İlk Yardım Kiti",
+    "🪥 Diş Fırçası / Macun",
+    "🧴 Dudak Koruyucu / Nemlendirici",
+    "😷 Maske"
+  ],
+  'Elektronik': [
+    "💻 Tablet / iPad",
+    "🎮 Taşınabilir Oyun Konsolu",
+    "📱 Yedek Telefon",
+    "🔌 Şarj Kablosu",
+    "🔊 Bluetooth Hoparlör",
+    "📺 HDMI Kablosu",
+    "🔋 Taşınabilir Batarya"
+  ]
+};
 
   const categoryIcons = {
     'Tümü': '📋',
@@ -579,25 +620,12 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
     elevation: 2,
   },
-  addButton: { 
-    backgroundColor: "#007AFF",
-    color: "#fff",
-    padding: 16, 
-    borderRadius: 12, 
-    marginBottom: 12,
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.2,
-    shadowRadius: 3.84,
-    elevation: 5,
-  },
+  
   homeButton: { 
     backgroundColor: "#34C759", 
-    padding: 16, 
-    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16, 
+    borderRadius: 40,
     shadowColor: "#000",
     shadowOffset: {
       width: 0,
