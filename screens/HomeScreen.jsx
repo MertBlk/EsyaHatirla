@@ -506,23 +506,18 @@ const HomeScreen = () => {
 };
 
 const styles = StyleSheet.create({
-  // Ana container stil güncellemeleri
   container: { 
     flex: 1, 
     padding: 12, 
-    backgroundColor: "#F5F5F5"
+    backgroundColor: "#1C1C1E" // Koyu arka plan
   },
-  
-  // Başlık stil güncellemeleri
   title: { 
     fontSize: 28, 
     fontWeight: "bold", 
-    color: "#2C3E50",
+    color: "#FFFFFF", // Beyaz yazı
     marginBottom: 24,
     marginTop: 12
   },
-
-  // Kategori seçici stil güncellemeleri
   categoryWrapper: {
     height: 44,
     marginBottom: 8,
@@ -544,9 +539,9 @@ const styles = StyleSheet.create({
     height: 36,
     marginRight: 8,
     borderRadius: 18,
-    backgroundColor: '#fff',
+    backgroundColor: '#2C2C2E', // Koyu kart rengi
     borderWidth: 1,
-    borderColor: '#E0E0E0',
+    borderColor: '#3A3A3C', // Koyu kenarlık
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: "#000",
@@ -562,7 +557,7 @@ const styles = StyleSheet.create({
   categoryButtonText: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#666',
+    color: '#EBEBF5', // Açık gri yazı
   },
   selectedCategoryText: {
     color: '#fff',
@@ -576,7 +571,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between", 
     padding: 16,
     borderRadius: 12,
-    backgroundColor: "#fff",
+    backgroundColor: "#2C2C2E", // Koyu kart rengi
     marginBottom: 10,
     shadowColor: "#000",
     shadowOffset: {
@@ -588,14 +583,19 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   selectedItem: { 
-    backgroundColor: "#E8F5E9",
+    backgroundColor: "#1C1C1E", // Koyu arka plan
     borderWidth: 1,
-    borderColor: "#4CAF50"
+    borderColor: "#34C759", // iOS yeşil renk
   },
+  
   itemText: { 
     fontSize: 16,
     fontWeight: "500",
-    color: "#333"
+    color: "#FFFFFF" // Beyaz yazı
+  },
+  selectedItemText: { // Yeni stil ekle
+    color: "#34C759", // Seçili durumda yeşil yazı
+    fontWeight: "600"
   },
   checkIcon: { 
     fontSize: 20, 
@@ -651,7 +651,7 @@ const styles = StyleSheet.create({
   // Modal stil güncellemeleri
   modalContainer: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.6)',
+    backgroundColor: 'rgba(0,0,0,0.8)', // Koyu modal arka planı
     justifyContent: 'center',
     padding: 20,
   },
@@ -667,7 +667,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: 16,
-    backgroundColor: '#fff',
+    backgroundColor: '#2C2C2E', // Koyu kart rengi
     borderRadius: 12,
     marginBottom: 12,
   },
@@ -682,7 +682,7 @@ const styles = StyleSheet.create({
   // Stil eklemeleri
   statsCard: {
     flexDirection: 'row',
-    backgroundColor: '#fff',
+    backgroundColor: '#2C2C2E', // Koyu kart rengi
     borderRadius: 12,
     padding: 8,
     marginBottom: 8,
@@ -710,16 +710,16 @@ const styles = StyleSheet.create({
   statNumber: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#007AFF',
+    color: '#0A84FF', // iOS mavi
   },
   statLabel: {
     fontSize: 14,
-    color: '#666',
+    color: '#EBEBF5', // Açık gri yazı
     marginTop: 4,
   },
   statDivider: {
     width: 1,
-    backgroundColor: '#E0E0E0',
+    backgroundColor: '#3A3A3C', // Koyu ayırıcı çizgi
     marginHorizontal: 16,
   },
   loadingContainer: {
@@ -728,7 +728,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'rgba(255,255,255,0.8)',
+    backgroundColor: 'rgba(0,0,0,0.8)', // Koyu yükleme arka planı
     justifyContent: 'center',
     alignItems: 'center',
   },
