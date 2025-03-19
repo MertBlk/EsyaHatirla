@@ -21,9 +21,82 @@ const HomeScreen = () => {
     "🍫 Atıştırmalık", "🔑 Yedek Anahtar", "🖊️ Kalem", "🎨 Küçük Çizim Defteri",
     "💼 Laptop / Tablet", "🔌 Taşınabilir Adaptör / Priz", "📂 USB Bellek / Hard Disk"
   ];
+  const categorizedItems = {
+    'Günlük': [
+      "🔑 Anahtar",
+      "👝 Cüzdan",
+      "📱 Telefon",
+      "🔋 Powerbank",
+      "⌚ Akıllı Saat",
+      "🕶️ Güneş Gözlüğü",
+      "🚬 Sigara / Çakmak",
+      "🥤 Su Şişesi",
+      "🔖 Kitap Ayracı",
+      "🎧 Kulaklık",
+    ],
+    'İş/Okul': [
+      "💼 Laptop",
+      "📚 Defter / Kitap",
+      "✏️ Kalem",
+      
+      "📂 USB Bellek / Hard Disk",
+      "📝 Not Defteri / Yapışkan Notlar",
+      "📮 Evrak / Dosya",
+      "🪪 Çalışma Kartı / Personel Kartı"
+    ],
+    'Spor': [
+      "👟 Spor Ayakkabı",
+      "🎽 Spor Kıyafeti",
+      "🧴 Havlu",
+      "🥤 Su Şişesi",
+      "🏋️‍♂️ Ağırlık Eldiveni",
+      "🍏 Sağlıklı Atıştırmalık",
+      "🎧 Spor İçin Kulaklık",
+      "🧦 Yedek Çorap"
+    ],
+    'Seyahat': [
+      "🎫 Kimlik / Pasaport",
+      "🧳 Valiz",
+      "🔌 Şarj Aleti",
+      "💳 Banka Kartı",
+      "📜 Uçuş / Otel Rezervasyon Belgeleri",
+      "🗺️ Harita / Navigasyon Cihazı",
+      "🧥 Mont / Şemsiye",
+      "🔦 El Feneri",
+      "💊 Seyahat İçin İlaçlar",
+      "📷 Fotoğraf Makinesi"
+    ],
+    'Sağlık': [
+      "🩹 İlaç",
+      "🧴 El Dezenfektanı",
+      "💊 Vitamin / Takviye",
+      "🧻 Islak Mendil / Peçete",
+      "🩹 Yara Bandı / Küçük İlk Yardım Kiti",
+      "🪥 Diş Fırçası / Macun",
+      "🧴 Dudak Koruyucu / Nemlendirici",
+      "😷 Maske"
+    ],
+    'Elektronik': [
+      "💻 Tablet / iPad",
+      "🎮 Taşınabilir Oyun Konsolu",
+      "📱 Yedek Telefon",
+      "🔌 Şarj Kablosu",
+      "🔊 Bluetooth Hoparlör",
+      "📺 HDMI Kablosu",
+      "🔋 Taşınabilir Batarya"
+    ]
+  };
+  
+    const categoryIcons = {
+      'Tümü': '📋',
+      'Günlük': '🌞',
+      'İş/Okul': '💼',
+      'Spor': '🏃',
+      'Seyahat': '✈️',
+      'Sağlık': '💊'
+    };
 
   const [items, setItems] = useState(initialItems);
-  
   const [selectedItems, setSelectedItems] = useState([]);
   const [homeLocation, setHomeLocation] = useState(null);
   const [locationSubscription, setLocationSubscription] = useState(null);
@@ -34,80 +107,7 @@ const HomeScreen = () => {
   const [isLoading, setIsLoading] = useState(false); // Yükleme durumu için state ekleyin
   const [isDarkMode, setIsDarkMode] = useState(true);
 
-  const categorizedItems = {
-  'Günlük': [
-    "🔑 Anahtar",
-    "👝 Cüzdan",
-    "📱 Telefon",
-    "🔋 Powerbank",
-    "⌚ Akıllı Saat",
-    "🕶️ Güneş Gözlüğü",
-    "🚬 Sigara / Çakmak",
-    "🥤 Su Şişesi",
-    "🔖 Kitap Ayracı",
-    "🎧 Kulaklık",
-  ],
-  'İş/Okul': [
-    "💼 Laptop",
-    "📚 Defter / Kitap",
-    "✏️ Kalem",
-    
-    "📂 USB Bellek / Hard Disk",
-    "📝 Not Defteri / Yapışkan Notlar",
-    "📮 Evrak / Dosya",
-    "🪪 Çalışma Kartı / Personel Kartı"
-  ],
-  'Spor': [
-    "👟 Spor Ayakkabı",
-    "🎽 Spor Kıyafeti",
-    "🧴 Havlu",
-    "🥤 Su Şişesi",
-    "🏋️‍♂️ Ağırlık Eldiveni",
-    "🍏 Sağlıklı Atıştırmalık",
-    "🎧 Spor İçin Kulaklık",
-    "🧦 Yedek Çorap"
-  ],
-  'Seyahat': [
-    "🎫 Kimlik / Pasaport",
-    "🧳 Valiz",
-    "🔌 Şarj Aleti",
-    "💳 Banka Kartı",
-    "📜 Uçuş / Otel Rezervasyon Belgeleri",
-    "🗺️ Harita / Navigasyon Cihazı",
-    "🧥 Mont / Şemsiye",
-    "🔦 El Feneri",
-    "💊 Seyahat İçin İlaçlar",
-    "📷 Fotoğraf Makinesi"
-  ],
-  'Sağlık': [
-    "🩹 İlaç",
-    "🧴 El Dezenfektanı",
-    "💊 Vitamin / Takviye",
-    "🧻 Islak Mendil / Peçete",
-    "🩹 Yara Bandı / Küçük İlk Yardım Kiti",
-    "🪥 Diş Fırçası / Macun",
-    "🧴 Dudak Koruyucu / Nemlendirici",
-    "😷 Maske"
-  ],
-  'Elektronik': [
-    "💻 Tablet / iPad",
-    "🎮 Taşınabilir Oyun Konsolu",
-    "📱 Yedek Telefon",
-    "🔌 Şarj Kablosu",
-    "🔊 Bluetooth Hoparlör",
-    "📺 HDMI Kablosu",
-    "🔋 Taşınabilir Batarya"
-  ]
-};
-
-  const categoryIcons = {
-    'Tümü': '📋',
-    'Günlük': '🌞',
-    'İş/Okul': '💼',
-    'Spor': '🏃',
-    'Seyahat': '✈️',
-    'Sağlık': '💊'
-  };
+  
 
   const theme = {
     dark: {
@@ -389,7 +389,10 @@ const HomeScreen = () => {
       animationType="slide"
     >
       <View style={styles.modalContainer}>
-        <Text style={styles.modalTitle}>⚠️ Eşya Kontrol Listesi</Text>
+        <Text style={styles.modalTitle}>
+          <Text>⚠️</Text>
+          <Text> Eşya Kontrol Listesi</Text>
+        </Text>
         {selectedItems.map(item => (
           <View key={item} style={styles.checklistItem}>
             <Text style={styles.itemText}>{item}</Text>
@@ -553,7 +556,9 @@ const HomeScreen = () => {
             }
           >
             <Text style={[styles.itemText, dynamicStyles.text]}>{item}</Text>
-            {selectedItems.includes(item) && <Text style={styles.checkIcon}>✔️</Text>}
+            {selectedItems.includes(item) && (
+              <Text style={styles.checkIcon}>✔️</Text>
+            )}
           </TouchableOpacity>
         )}
         keyExtractor={(item, index) => item + index.toString()}
