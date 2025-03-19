@@ -322,7 +322,7 @@ const HomeScreen = () => {
       const notificationContent = {
         title: "Eşyalarını Aldın mı?",
         body: selectedItems && selectedItems.length > 0 
-          ? `Unutma! ${selectedItems.join(', ')}` 
+          ? `Unutma! ${selectedItems.join(', ')}`
           : 'Hiç eşya seçmedin!',
         sound: 'default',
         priority: 'high',
@@ -422,12 +422,14 @@ const HomeScreen = () => {
         <TouchableOpacity
           style={[
             styles.categoryButton,
-            selectedCategory === 'Tümü' && styles.selectedCategoryButton
+            dynamicStyles.categoryButton,
+            selectedCategory === 'Tümü' && dynamicStyles.selectedCategory
           ]}
           onPress={() => setSelectedCategory('Tümü')}
         >
           <Text style={[
             styles.categoryButtonText,
+            dynamicStyles.categoryText,
             selectedCategory === 'Tümü' && styles.selectedCategoryText
           ]}>
             {categoryIcons['Tümü']} Tümü
@@ -438,12 +440,14 @@ const HomeScreen = () => {
             key={category}
             style={[
               styles.categoryButton,
-              selectedCategory === category && styles.selectedCategoryButton
+              dynamicStyles.categoryButton,
+              selectedCategory === category && dynamicStyles.selectedCategory
             ]}
             onPress={() => setSelectedCategory(category)}
           >
             <Text style={[
               styles.categoryButtonText,
+              dynamicStyles.categoryText,
               selectedCategory === category && styles.selectedCategoryText
             ]}>
               {categoryIcons[category]} {category}
@@ -461,16 +465,25 @@ const HomeScreen = () => {
     return categorizedItems[selectedCategory] || [];
   };
 
+  // StatsCard bileşenini güncelle
   const StatsCard = () => (
-    <View style={styles.statsCard}>
+    <View style={[styles.statsCard, dynamicStyles.statsCard]}>
       <View style={styles.statItem}>
-        <Text style={styles.statNumber}>{selectedItems.length}</Text>
-        <Text style={styles.statLabel}>Seçili</Text>
+        <Text style={[styles.statNumber, dynamicStyles.text]}>
+          {selectedItems.length}
+        </Text>
+        <Text style={[styles.statLabel, dynamicStyles.categoryText]}>
+          Seçili
+        </Text>
       </View>
       <View style={styles.statDivider} />
       <View style={styles.statItem}>
-        <Text style={styles.statNumber}>{getFilteredItems().length}</Text>
-        <Text style={styles.statLabel}>Toplam</Text>
+        <Text style={[styles.statNumber, dynamicStyles.text]}>
+          {getFilteredItems().length}
+        </Text>
+        <Text style={[styles.statLabel, dynamicStyles.categoryText]}>
+          Toplam
+        </Text>
       </View>
     </View>
   );
@@ -496,6 +509,21 @@ const HomeScreen = () => {
     },
     text: {
       color: isDarkMode ? theme.dark.text : theme.light.text
+    },
+    // Yeni stiller ekle
+    categoryButton: {
+      backgroundColor: isDarkMode ? theme.dark.surface : theme.light.surface,
+      borderColor: isDarkMode ? theme.dark.border : theme.light.border
+    },
+    categoryText: {
+      color: isDarkMode ? theme.dark.textSecondary : theme.light.textSecondary
+    },
+    selectedCategory: {
+      backgroundColor: '#007AFF',
+      borderColor: '#007AFF'
+    },
+    statsCard: {
+      backgroundColor: isDarkMode ? theme.dark.surface : theme.light.surface
     }
   };
 
