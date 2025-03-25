@@ -379,7 +379,36 @@ const HomeScreen = () => {
       sendAlert("Kritik Uyarı: Çok uzaklaştın!");
     }
   };
+  // HomeScreen.jsx içine yeni fonksiyon ekleyin
+    const simulateLocationChange = () => {
+      // Test koordinatları (Ev konumundan 100 metre uzakta)
+      const testLocation = {
+        coords: {
+          latitude: (homeLocation?.latitude || 0) + 0.001, // Yaklaşık 100 metre kuzey
+          longitude: homeLocation?.longitude || 0
+        }
+      };
 
+      // Konum değişimini simüle et
+      if (locationSubscription) {
+        console.log("Simüle edilen konum:", testLocation);
+        locationSubscription.remove();
+        
+        const distance = getDistanceFromLatLonInMeters(
+          homeLocation.latitude,
+          homeLocation.longitude,
+          testLocation.coords.latitude,
+          testLocation.coords.longitude
+        );
+
+        console.log("Hesaplanan mesafe:", distance, "metre");
+        
+        if (distance >= 50) {
+          sendAlert();
+          Vibration.vibrate(1000);
+        }
+      }
+    };
   
 
   const WarningModal = () => (
@@ -597,6 +626,13 @@ const HomeScreen = () => {
         <TouchableOpacity style={styles.homeButton} onPress={saveHomeLocation}>
           <Text style={styles.buttonText}>🏠 Ev Konumunu Kaydet</Text>
         </TouchableOpacity>
+        
+        <TouchableOpacity 
+            style={[styles.homeButton, { backgroundColor: '#007AFF' }]} 
+            onPress={simulateLocationChange}
+          >
+            <Text style={styles.buttonText}>🔄 Konum Değişimini Test Et</Text>
+          </TouchableOpacity>
 
         <WarningModal />
       </View>
@@ -863,6 +899,21 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 20, // Emoji boyutunu küçült
     textAlign: "center",
+  },
+  testButton: {
+    backgroundColor: '#007AFF',
+    padding: 16,
+    marginTop: 8,
+    marginBottom: 8,
+    borderRadius: 40,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.2,
+    shadowRadius: 3.84,
+    elevation: 5,
   },
 });
 
