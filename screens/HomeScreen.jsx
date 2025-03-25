@@ -4,13 +4,13 @@ import CheckBox from '@react-native-community/checkbox';
 import * as Location from 'expo-location';
 import * as Notifications from 'expo-notifications';
 import NetInfo from "@react-native-community/netinfo";
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const HomeScreen = () => {
   const initialItems = [
     "🔑 Anahtar", "👝 Cüzdan", "🎧 Kulaklık", "📱 Telefon", "🏠 Ev Kartı",
     "💳 Banka Kartı", "🎟️ Toplu Taşıma Kartı", "🔋 Powerbank", "⌚ Akıllı Saat",
     "🕶️ Güneş Gözlüğü", "🚬 Sigara / Çakmak", "📚 Defter / Kitap",
-    "🩹 İlaç", "🧥 Mont / Şemsiye", "🥤 Su Şişesi", "🎫 Kimlik / Pasaport",
     "🔑 Araba Anahtarı", "🎵 Kulaklık Kılıfı", "🛍️ Alışveriş Çantası",
     "💊 Vitamin / Takviye", "🧴 El Dezenfektanı / Kolonya", "🧻 Islak Mendil / Peçete",
     "🍬 Sakız / Şekerleme", "🏋️‍♂️ Spor Eşyaları", "📝 Not Defteri / Yapışkan Notlar",
@@ -125,7 +125,7 @@ const HomeScreen = () => {
       border: '#E5E5EA'
     }
   };
-
+  
   useEffect(() => {
     checkInternetConnection();
     requestPermissions();
@@ -491,126 +491,147 @@ const HomeScreen = () => {
     </View>
   );
 
+// ThemeToggle bileşenini güncelle
   const ThemeToggle = () => (
     <TouchableOpacity
-      style={[styles.homeButton, { backgroundColor: isDarkMode ? '#34C759' : '#007AFF' }]}
+      style={[styles.themeToggleButton]} // homeButton yerine yeni stil
       onPress={() => setIsDarkMode(!isDarkMode)}
     >
-      <Text style={styles.buttonText}>
-        {isDarkMode ? '☀️ Açık Mod' : '🌙 Koyu Mod'}
+      <Text style={styles.buttonModeText}>
+        {isDarkMode ? '☀️' : '🌙'}
       </Text>
     </TouchableOpacity>
   );
 
   const dynamicStyles = {
     container: {
-      backgroundColor: isDarkMode ? theme.dark.background : theme.light.background
+      backgroundColor: isDarkMode ? '#1C1C1E' : '#F2F2F7'
     },
     itemContainer: {
-      backgroundColor: isDarkMode ? theme.dark.surface : theme.light.surface,
-      borderColor: isDarkMode ? theme.dark.border : theme.light.border
+      backgroundColor: isDarkMode ? '#2C2C2E' : '#FFFFFF',
+      borderColor: isDarkMode ? '#3A3A3C' : '#E5E5EA'
     },
     text: {
-      color: isDarkMode ? theme.dark.text : theme.light.text
+      color: isDarkMode ? '#FFFFFF' : '#000000'
     },
-    // Yeni stiller ekle
     categoryButton: {
-      backgroundColor: isDarkMode ? theme.dark.surface : theme.light.surface,
-      borderColor: isDarkMode ? theme.dark.border : theme.light.border
+      backgroundColor: isDarkMode ? '#2C2C2E' : '#FFFFFF',
+      borderColor: isDarkMode ? '#3A3A3C' : '#E5E5EA'
     },
     categoryText: {
-      color: isDarkMode ? theme.dark.textSecondary : theme.light.textSecondary
+      color: isDarkMode ? '#EBEBF5' : '#666666'
     },
     selectedCategory: {
       backgroundColor: '#007AFF',
       borderColor: '#007AFF'
     },
     statsCard: {
-      backgroundColor: isDarkMode ? theme.dark.surface : theme.light.surface
+      backgroundColor: isDarkMode ? '#2C2C2E' : '#FFFFFF'
+    },
+    selectedItem: {
+      backgroundColor: isDarkMode ? '#1C1C1E' : '#F2F2F7',
+      borderWidth: 2,
+      borderColor: "#34C759",
+      shadowColor: "#34C759",
+      shadowOffset: { width: 0, height: 0 },
+      shadowOpacity: 0.3,
+      shadowRadius: 4,
+      elevation: 4
     }
   };
 
   return (
-    <View style={[styles.container, dynamicStyles.container]}>
-      <Text style={[styles.title, dynamicStyles.text]}>Unutma! Yanına al</Text>
-      
-      <ThemeToggle /> {/* Tema değiştirme butonu */}
-      
-      <CategorySelector />
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: isDarkMode ? '#1C1C1E' : '#F2F2F7' }]}>
+      <View style={[styles.container, dynamicStyles.container, { backgroundColor: isDarkMode ? theme.dark.background : theme.light.background }]}>
+      <StatusBar barStyle={isDarkMode ? "light-content" : "dark-content"} />
+      <Text style={[styles.title, dynamicStyles.text]}>
+        Unutma! Yanına al
+      </Text>
+        
+        <ThemeToggle /> {/* Tema değiştirme butonu */}
+        
+        <CategorySelector />
 
-      <StatsCard />
+        <StatsCard />
 
-      <FlatList
-        data={getFilteredItems()}
-        renderItem={({ item }) => (
-          <TouchableOpacity
-            style={[
-              styles.itemContainer,
-              dynamicStyles.itemContainer,
-              selectedItems.includes(item) && styles.selectedItem,
-            ]}
-            onPress={() =>
-              setSelectedItems(prev =>
-                prev.includes(item) ? prev.filter(i => i !== item) : [...prev, item]
-              )
-            }
-          >
-            <Text style={[styles.itemText, dynamicStyles.text]}>{item}</Text>
-            {selectedItems.includes(item) && (
-              <Text style={styles.checkIcon}>✔️</Text>
-            )}
-          </TouchableOpacity>
+        <FlatList
+          data={getFilteredItems()}
+          renderItem={({ item }) => (
+            <TouchableOpacity
+              style={[
+                styles.itemContainer,
+                dynamicStyles.itemContainer,
+                selectedItems.includes(item) && dynamicStyles.selectedItem, // styles.selectedItem yerine dynamicStyles.selectedItem kullanıyoruz
+              ]}
+              onPress={() =>
+                setSelectedItems(prev =>
+                  prev.includes(item) ? prev.filter(i => i !== item) : [...prev, item]
+                )
+              }
+            >
+              <Text style={[
+                styles.itemText, 
+                dynamicStyles.text,
+                selectedItems.includes(item) && dynamicStyles.selectedItemText // Seçili durum için metin stili
+              ]}>
+                {item}
+              </Text>
+              {selectedItems.includes(item) && (
+                <Text style={styles.checkIcon}>✔️</Text>
+              )}
+            </TouchableOpacity>
+          )}
+          keyExtractor={(item, index) => item + index.toString()}
+        />
+        
+        {isLoading && ( // Yükleme göstergesi
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#007AFF" />
+          </View>
         )}
-        keyExtractor={(item, index) => item + index.toString()}
-      />
-      
-      {isLoading && ( // Yükleme göstergesi
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#007AFF" />
-        </View>
-      )}
 
-      
+        
 
-      
+        
 
-      <TouchableOpacity style={styles.homeButton} onPress={saveHomeLocation}>
-        <Text style={styles.buttonText}>🏠 Ev Konumunu Kaydet</Text>
-      </TouchableOpacity>
+        <TouchableOpacity style={styles.homeButton} onPress={saveHomeLocation}>
+          <Text style={styles.buttonText}>🏠 Ev Konumunu Kaydet</Text>
+        </TouchableOpacity>
 
-      <WarningModal />
-    </View>
+        <WarningModal />
+      </View>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: "#1C1C1E",
+  },
   container: { 
     flex: 1, 
-    padding: 12, 
-    backgroundColor: "#1C1C1E" // Koyu arka plan
+    padding: 10, 
+    backgroundColor: "#1C1C1E"
   },
   title: { 
     fontSize: 28, 
     fontWeight: "bold", 
-    color: "#FFFFFF", // Beyaz yazı
-    marginBottom: 24,
-    marginTop: 12
+    color: "#FFFFFF",
+    marginBottom: 12,
   },
   categoryWrapper: {
-    height: 44,
-    marginBottom: 8,
+    height: 40,
+    marginBottom:6,
   },
-  
   categoryScrollContent: {
     alignItems: 'center',
-    paddingVertical: 4,
+    paddingVertical: 10,
   },
-  
   categoryContainer: {
     height: 40,
     marginBottom: 8,
-    paddingVertical: 0,
-    height: 94, // Yüksekliği azalttık
+    paddingVertical: 0,    
   },
   categoryButton: {
     width: 100,
@@ -647,7 +668,7 @@ const styles = StyleSheet.create({
     flexDirection: "row", 
     alignItems: "center",
     justifyContent: "space-between", 
-    padding: 16,
+    padding: 18,
     borderRadius: 12,
     backgroundColor: "#2C2C2E", // Koyu kart rengi
     marginBottom: 10,
@@ -702,7 +723,8 @@ const styles = StyleSheet.create({
   homeButton: { 
     backgroundColor: "#34C759", 
     padding: 16,
-    marginBottom: 16, 
+    marginTop: 8,
+    marginBottom: 10, 
     borderRadius: 40,
     shadowColor: "#000",
     shadowOffset: {
@@ -716,6 +738,7 @@ const styles = StyleSheet.create({
   buttonText: { 
     color: "#fff", 
     fontSize: 16, 
+    
     fontWeight: "600",
     textAlign: "center"
   },
@@ -724,6 +747,12 @@ const styles = StyleSheet.create({
     fontSize: 16, 
     fontWeight: "600",
     textAlign: "center"
+  },
+  buttonModeText: {
+    color: "#fff",
+    height: 32,
+    fontSize: 24,
+    textAlign: "center",
   },
 
   // Modal stil güncellemeleri
@@ -809,6 +838,31 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.8)', // Koyu yükleme arka planı
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  themeToggleButton: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    width: 40, // Genişliği küçült
+    height: 40, // Yüksekliği küçült
+    borderRadius: 20, // Tam yuvarlak için width/2
+    backgroundColor: "#34C759",
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.2,
+    shadowRadius: 3.84,
+    elevation: 5,
+    zIndex: 1, // Diğer elementlerin üzerinde görünmesi için
+  },
+  buttonModeText: {
+    color: "#fff",
+    fontSize: 20, // Emoji boyutunu küçült
+    textAlign: "center",
   },
 });
 

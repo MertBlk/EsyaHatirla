@@ -4,6 +4,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { StatusBar } from 'expo-status-bar';
 import { View, useColorScheme } from 'react-native';
 import HomeScreen from './screens/HomeScreen';
+import { ThemeProvider } from './context/ThemeContext';
 
 const Stack = createNativeStackNavigator();
 
@@ -29,28 +30,30 @@ export default function App() {
   const colors = isDarkMode ? theme.dark : theme.light;
 
   return (
-    <View style={{ flex: 1, backgroundColor: colors.background }}>
-      <SafeAreaProvider>
-        <NavigationContainer>
-          <Stack.Navigator screenOptions={{
-            headerStyle: {
-              backgroundColor: colors.background
-            },
-            headerTintColor: colors.text,
-            headerShadowVisible: false // Header çizgisini kaldırır
-          }}>
-            <Stack.Screen 
-              name="Home" 
-              component={HomeScreen}
-              options={{ 
-                title: '',
-                headerShown: false // Header'ı tamamen gizler
-              }} 
-            />
-          </Stack.Navigator>
-          <StatusBar style={isDarkMode ? "light" : "dark"} />
-        </NavigationContainer>
-      </SafeAreaProvider>
-    </View>
+    <ThemeProvider>
+      <View style={{ flex: 1, backgroundColor: colors.background }}>
+        <SafeAreaProvider>
+          <NavigationContainer>
+            <Stack.Navigator screenOptions={{
+              headerStyle: {
+                backgroundColor: colors.background
+              },
+              headerTintColor: colors.text,
+              headerShadowVisible: false // Header çizgisini kaldırır
+            }}>
+              <Stack.Screen 
+                name="Home" 
+                component={HomeScreen}
+                options={{ 
+                  title: '',
+                  headerShown: false // Header'ı tamamen gizler
+                }} 
+              />
+            </Stack.Navigator>
+            <StatusBar style={isDarkMode ? "light" : "dark"} />
+          </NavigationContainer>
+        </SafeAreaProvider>
+      </View>
+    </ThemeProvider>
   );
 }
