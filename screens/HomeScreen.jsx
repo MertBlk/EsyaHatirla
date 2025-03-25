@@ -5,6 +5,14 @@ import * as Location from 'expo-location';
 import * as Notifications from 'expo-notifications';
 import NetInfo from "@react-native-community/netinfo";
 import { SafeAreaView } from 'react-native-safe-area-context';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+// 1. Sabit değişkenleri en üste ekle
+const EARTH_RADIUS = 6371e3; // Dünya yarıçapı (metre)
+const STORAGE_KEYS = {
+  SAVED_LOCATIONS: '@saved_locations',
+  HOME_LOCATION: '@home_location'
+};
 
 const HomeScreen = () => {
   const initialItems = [
@@ -106,6 +114,8 @@ const HomeScreen = () => {
   const [selectedCategory, setSelectedCategory] = useState('Tümü');
   const [isLoading, setIsLoading] = useState(false); // Yükleme durumu için state ekleyin
   const [isDarkMode, setIsDarkMode] = useState(true);
+  const [savedLocations, setSavedLocations] = useState([]);
+  const [locationName, setLocationName] = useState('');
 
   
 
@@ -203,44 +213,60 @@ const HomeScreen = () => {
     }
   };
 
-  // 📍 Kullanıcının mevcut konumunu al ve ev konumu olarak kaydet
-  const saveHomeLocation = async () => {
-    try {
-      const permissionGranted = await requestPermissions();
-      if (!permissionGranted) {
-        return;
-      }
+  // 2. saveLocation ve saveHomeLocation fonksiyonlarını birleştir
+const saveLocation = async () => {
+  try {
+    const permissionGranted = await requestPermissions();
+    if (!permissionGranted) return;
 
-      const enabled = await Location.hasServicesEnabledAsync();
-      if (!enabled) {
-        Alert.alert(
-          "Konum Servisleri Kapalı",
-          "Lütfen cihazınızın konum servislerini açın."
-        );
-        return;
-      }
+    const location = await Location.getCurrentPositionAsync({
+      accuracy: Location.Accuracy.High
+    });
 
-      const location = await Location.getCurrentPositionAsync({
-        accuracy: Location.Accuracy.High
-      });
+    if (location?.coords) {
+      const { latitude, longitude } = location.coords;
+      
+      Alert.prompt(
+        "Konum Adı",
+        "Bu konumu nasıl adlandırmak istersiniz?",
+        [
+          { text: "İptal", style: "cancel" },
+          {
+            text: "Kaydet",
+            onPress: async (name) => {
+              if (!name) return;
+              
+              const newLocation = {
+                id: Date.now().toString(),
+                name,
+                latitude,
+                longitude
+              };
 
-      if (location && location.coords) {
-        const { latitude, longitude } = location.coords;
-        // State'i direkt olarak güncelle
-        setHomeLocation({ latitude, longitude });
-      } else {
-        throw new Error("Konum bilgisi alınamadı");
-      }
-    } catch (error) {
-      console.error("Konum alma hatası:", error);
-      Alert.alert(
-        "Hata",
-        "Konum alınırken bir hata oluştu. Lütfen tekrar deneyin."
+              try {
+                const updatedLocations = [...savedLocations, newLocation];
+                setSavedLocations(updatedLocations);
+                await AsyncStorage.setItem(
+                  STORAGE_KEYS.SAVED_LOCATIONS,
+                  JSON.stringify(updatedLocations)
+                );
+                setHomeLocation(newLocation);
+              } catch (error) {
+                console.error("Storage error:", error);
+                Alert.alert("Hata", "Konum kaydedilemedi");
+              }
+            }
+          }
+        ]
       );
     }
-  };
+  } catch (error) {
+    console.error("Konum kaydetme hatası:", error);
+    Alert.alert("Hata", "Konum kaydedilemedi");
+  }
+};
 
-  // Yeni bir fonksiyon ekleyelim
+  
   const startLocationTracking = async (savedLocation) => {
     try {
       // savedLocation parametresini veya state'teki homeLocation'ı kullan
@@ -255,6 +281,7 @@ const HomeScreen = () => {
       if (locationSubscription) {
         return;
       }
+     
 
       console.log("Takip başlatılıyor, konum:", locationToTrack);
 
@@ -390,7 +417,7 @@ const HomeScreen = () => {
       await Notifications.scheduleNotificationAsync({
         content: {
           title: "⚠️ Dikkat! Evden Uzaklaşıyorsun!",
-          body: selectedItems.length > 0
+          body: selectedItems.length > 10
             ? `${selectedItems.length} eşyan seçili:\n${itemsList}`
             : 'Hiç eşya seçmedin! Kontrol et!',
           sound: 'default',
@@ -417,7 +444,115 @@ const HomeScreen = () => {
   };
   // HomeScreen.jsx içine yeni fonksiyon ekleyin
     
+  const saveHomeLocation = async () => {
+    try {
+      const permissionGranted = await requestPermissions();
+      if (!permissionGranted) return;
   
+      const location = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.High
+      });
+  
+      if (location && location.coords) {
+        const { latitude, longitude } = location.coords;
+        
+        // Konum adını almak için modal göster
+        Alert.prompt(
+          "Konum Adı",
+          "Bu konumu nasıl adlandırmak istersiniz?",
+          [
+            {
+              text: "İptal",
+              style: "cancel"
+            },
+            {
+              text: "Kaydet",
+              onPress: async (name) => {
+                if (!name) return;
+                
+                const newLocation = {
+                  id: Date.now().toString(),
+                  name,
+                  latitude,
+                  longitude
+                };
+  
+                const updatedLocations = [...savedLocations, newLocation];
+                setSavedLocations(updatedLocations);
+                
+                // AsyncStorage'a kaydet
+                await AsyncStorage.setItem(
+                  '@saved_locations',
+                  JSON.stringify(updatedLocations)
+                );
+  
+                setHomeLocation(newLocation);
+              }
+            }
+          ]
+        );
+      }
+    } catch (error) {
+      console.error("Konum kaydetme hatası:", error);
+      Alert.alert("Hata", "Konum kaydedilemedi");
+    }
+  };
+  const LocationPickerModal = () => {
+    const [isVisible, setIsVisible] = useState(false);
+  
+    return (
+      <>
+        <TouchableOpacity 
+          style={[styles.homeButton, { backgroundColor: '#FF9500' }]}
+          onPress={() => setIsVisible(true)}
+        >
+          <Text style={styles.buttonText}>📍 Kayıtlı Konumlar</Text>
+        </TouchableOpacity>
+  
+        <Modal
+          visible={isVisible}
+          animationType="slide"
+          transparent={true}
+        >
+          <View style={styles.modalContainer}>
+            <Text style={[styles.modalTitle, { color: '#FF9500' }]}>
+              Kayıtlı Konumlar
+            </Text>
+            
+            <FlatList
+              data={savedLocations}
+              keyExtractor={(item) => item.id}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  style={[styles.checklistItem, { 
+                    backgroundColor: homeLocation?.id === item.id ? '#34C759' : '#2C2C2E' 
+                  }]}
+                  onPress={() => {
+                    setHomeLocation(item);
+                    setIsVisible(false);
+                  }}
+                >
+                  <Text style={[styles.itemText, { 
+                    color: homeLocation?.id === item.id ? '#FFF' : '#EBEBF5' 
+                  }]}>
+                    {item.name}
+                  </Text>
+                </TouchableOpacity>
+              )}
+            />
+  
+            <TouchableOpacity 
+              style={[styles.confirmButton, { backgroundColor: '#FF9500' }]}
+              onPress={() => setIsVisible(false)}
+            >
+              <Text style={styles.buttonText}>Kapat</Text>
+            </TouchableOpacity>
+          </View>
+        </Modal>
+      </>
+    );
+  };
+    
 
   const WarningModal = () => (
     <Modal
@@ -632,7 +767,7 @@ const HomeScreen = () => {
         
 
         <TouchableOpacity style={styles.homeButton} onPress={saveHomeLocation}>
-          <Text style={styles.buttonText}>🏠 Ev Konumunu Kaydet</Text>
+          <Text style={styles.buttonText}>🏠 Konumunu Kaydet</Text>
         </TouchableOpacity>
         
         <TouchableOpacity 
@@ -641,6 +776,7 @@ const HomeScreen = () => {
           >
             <Text style={styles.buttonText}>🔄 Konum Değişimini Test Et</Text>
           </TouchableOpacity>
+          
 
         <WarningModal />
       </View>
