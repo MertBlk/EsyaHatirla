@@ -410,23 +410,24 @@ const saveLocation = async () => {
       
       // Seçili eşyaları formatlı metne dönüştür
       const itemsList = selectedItems.length > 0 
-        ? selectedItems.map(item => item.split(' ')[1]).join(', ') // Emoji'leri kaldır
+        ? `${selectedItems.join('\n• ')}` // Her eşya için yeni satır ve madde işareti
         : 'Hiç eşya seçmedin!';
   
       // Bildirim gönder
       await Notifications.scheduleNotificationAsync({
         content: {
           title: "⚠️ Dikkat! Evden Uzaklaşıyorsun!",
-          body: selectedItems.length > 10
-            ? `${selectedItems.length} eşyan seçili:\n${itemsList}`
+          body: selectedItems.length > 0
+            ? `Seçili Eşyaların:\n• ${itemsList}`
             : 'Hiç eşya seçmedin! Kontrol et!',
           sound: 'default',
           priority: 'high',
+          badge: selectedItems.length
         },
         trigger: null,
       });
   
-      console.log('Uyarı gönderildi:', itemsList); // Debug için log
+      console.log('Uyarı gönderildi - Seçili eşyalar:', itemsList); // Debug için
   
     } catch (error) {
       console.error('Uyarı hatası:', error);
@@ -662,7 +663,18 @@ const saveLocation = async () => {
       </View>
     </View>
   );
-
+  const CurrentLocationCard = () => (
+    <View style={[styles.statsCard, dynamicStyles.statsCard]}>
+      <View style={styles.currentLocationContainer}>
+        <Text style={[styles.locationTitle, dynamicStyles.text]}>
+          📍 Seçili Konum
+        </Text>
+        <Text style={[styles.locationName, dynamicStyles.categoryText]}>
+          {homeLocation?.name || 'Henüz konum seçilmedi'}
+        </Text>
+      </View>
+    </View>
+  );
 // ThemeToggle bileşenini güncelle
   const ThemeToggle = () => (
     <TouchableOpacity
@@ -725,6 +737,7 @@ const saveLocation = async () => {
         <CategorySelector />
 
         <StatsCard />
+        <CurrentLocationCard />
 
         <FlatList
           data={getFilteredItems()}
@@ -1059,6 +1072,19 @@ const styles = StyleSheet.create({
     shadowRadius: 3.84,
     elevation: 5,
   },
+  currentLocationContainer: {
+    flex: 1,
+    padding: 8,
+  },
+  locationTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  locationName: {
+    fontSize: 14,
+    fontWeight: '500',
+  }
 });
 
 export default HomeScreen;
