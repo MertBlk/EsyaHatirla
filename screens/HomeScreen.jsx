@@ -176,6 +176,7 @@ const HomeScreen = () => {
       );
     }
   }, [homeLocation]);
+  const homeLocationArray = {};
 
   // 📡 İnternet bağlantısını kontrol et
   const checkInternetConnection = () => {
@@ -260,7 +261,7 @@ const HomeScreen = () => {
       const subscription = await Location.watchPositionAsync(
         {
           accuracy: Location.Accuracy.Balanced,
-          timeInterval: 10000, // 10 saniyede bir kontrol et
+          timeInterval: 60000, // 60 saniyede bir kontrol et
           distanceInterval: 10, // 10 metrede bir kontrol et
         },
         (location) => {
@@ -292,6 +293,35 @@ const HomeScreen = () => {
       );
     }
   };
+  const simulateLocationChange = () => {
+    // Test koordinatları (Ev konumundan 100 metre uzakta)
+    const testLocation = {
+      coords: {
+        latitude: (homeLocation?.latitude || 0) + 0.001, // Yaklaşık 100 metre kuzey
+        longitude: homeLocation?.longitude || 0
+      }
+    };
+
+    // Konum değişimini simüle et
+    if (locationSubscription) {
+      console.log("Simüle edilen konum:", testLocation);
+      locationSubscription.remove();
+      
+      const distance = getDistanceFromLatLonInMeters(
+        homeLocation.latitude,
+        homeLocation.longitude,
+        testLocation.coords.latitude,
+        testLocation.coords.longitude
+      );
+
+      console.log("Hesaplanan mesafe:", distance, "metre");
+      
+      if (distance >= 50) {
+        sendAlert();
+        Vibration.vibrate(1000);
+      }
+    }
+  };
 
   // 📏 İki nokta arasındaki mesafeyi hesapla (Haversine Formülü)
   const getDistanceFromLatLonInMeters = (lat1, lon1, lat2, lon2) => {
@@ -317,33 +347,29 @@ const HomeScreen = () => {
         Alert.alert("İzin Hatası", "Bildirim göndermek için izin gerekiyor");
         return;
       }
-
-      // Bildirim içeriğini hazırla
+  
+      // Seçili eşyaları kontrol et ve formatlı metin oluştur
+      const itemsList = selectedItems.length > 0 
+        ? selectedItems.map(item => item.split(' ')[1]).join(', ') // Emoji'leri kaldır
+        : 'Hiç eşya seçmedin!';
+  
       const notificationContent = {
-        title: "Eşyalarını Aldın mı?",
-        body: selectedItems && selectedItems.length > 0 
-          ? `Unutma! ${selectedItems.join(', ')}`
-          : 'Hiç eşya seçmedin!',
+        title: "📝 Eşyalarını Aldın mı?",
+        body: selectedItems.length > 0 
+          ? `Unutma! Yanında olması gerekenler: ${itemsList}`
+          : itemsList,
         sound: 'default',
         priority: 'high',
+        badge: selectedItems.length,
       };
-
-      console.log('Seçili eşyalar:', selectedItems); // Debug için log
-      console.log('Bildirim içeriği:', notificationContent); // Debug için log
-
-      await Notifications.setNotificationHandler({
-        handleNotification: async () => ({
-          shouldShowAlert: true,
-          shouldPlaySound: true,
-          shouldSetBadge: false,
-        }),
-      });
-
+  
       await Notifications.scheduleNotificationAsync({
         content: notificationContent,
-        trigger: null
+        trigger: null // Hemen gönder
       });
-
+  
+      console.log('Bildirim gönderildi:', notificationContent);
+  
     } catch (error) {
       console.error('Bildirim hatası:', error);
       Alert.alert("Bildirim Hatası", "Bildirim gönderilemedi: " + error.message);
@@ -352,19 +378,29 @@ const HomeScreen = () => {
 
   const sendAlert = async () => {
     try {
-      // Titreşim paterni: 500ms açık, 200ms kapalı, 500ms açık
+      // Titreşim paterni
       Vibration.vibrate([500, 200, 500]);
       
-      // Sesli uyarı için özel ses ekleyin
+      // Seçili eşyaları formatlı metne dönüştür
+      const itemsList = selectedItems.length > 0 
+        ? selectedItems.map(item => item.split(' ')[1]).join(', ') // Emoji'leri kaldır
+        : 'Hiç eşya seçmedin!';
+  
+      // Bildirim gönder
       await Notifications.scheduleNotificationAsync({
         content: {
           title: "⚠️ Dikkat! Evden Uzaklaşıyorsun!",
-          body: `${selectedItems.length} eşyan seçili. Kontrol et!`,
-          sound: 'notification.wav', // özel ses dosyası
+          body: selectedItems.length > 0
+            ? `${selectedItems.length} eşyan seçili:\n${itemsList}`
+            : 'Hiç eşya seçmedin! Kontrol et!',
+          sound: 'default',
           priority: 'high',
         },
         trigger: null,
       });
+  
+      console.log('Uyarı gönderildi:', itemsList); // Debug için log
+  
     } catch (error) {
       console.error('Uyarı hatası:', error);
     }
@@ -380,35 +416,7 @@ const HomeScreen = () => {
     }
   };
   // HomeScreen.jsx içine yeni fonksiyon ekleyin
-    const simulateLocationChange = () => {
-      // Test koordinatları (Ev konumundan 100 metre uzakta)
-      const testLocation = {
-        coords: {
-          latitude: (homeLocation?.latitude || 0) + 0.001, // Yaklaşık 100 metre kuzey
-          longitude: homeLocation?.longitude || 0
-        }
-      };
-
-      // Konum değişimini simüle et
-      if (locationSubscription) {
-        console.log("Simüle edilen konum:", testLocation);
-        locationSubscription.remove();
-        
-        const distance = getDistanceFromLatLonInMeters(
-          homeLocation.latitude,
-          homeLocation.longitude,
-          testLocation.coords.latitude,
-          testLocation.coords.longitude
-        );
-
-        console.log("Hesaplanan mesafe:", distance, "metre");
-        
-        if (distance >= 50) {
-          sendAlert();
-          Vibration.vibrate(1000);
-        }
-      }
-    };
+    
   
 
   const WarningModal = () => (
