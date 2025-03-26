@@ -504,10 +504,10 @@ const saveLocation = async () => {
     return (
       <>
         <TouchableOpacity 
-          style={[styles.homeButton, { backgroundColor: '#FF9500' }]}
+          style={[styles.locationPickerButton]}
           onPress={() => setIsVisible(true)}
         >
-          <Text style={styles.buttonText}>📍 Kayıtlı Konumlar</Text>
+          <Text style={styles.buttonModeText}>📍</Text>
         </TouchableOpacity>
   
         <Modal
@@ -516,7 +516,7 @@ const saveLocation = async () => {
           transparent={true}
         >
           <View style={styles.modalContainer}>
-            <Text style={[styles.modalTitle, { color: '#FF9500' }]}>
+            <Text style={[styles.modalTitle, { color: '#FF9500', marginTop: 50 }]}>
               Kayıtlı Konumlar
             </Text>
             
@@ -683,6 +683,7 @@ const saveLocation = async () => {
     >
       <Text style={styles.buttonModeText}>
         {isDarkMode ? '☀️' : '🌙'}
+        
       </Text>
     </TouchableOpacity>
   );
@@ -733,6 +734,7 @@ const saveLocation = async () => {
       </Text>
         
         <ThemeToggle /> {/* Tema değiştirme butonu */}
+        <LocationPickerModal />
         
         <CategorySelector />
 
@@ -774,15 +776,10 @@ const saveLocation = async () => {
             <ActivityIndicator size="large" color="#007AFF" />
           </View>
         )}
-
-        
-
-        
-
         <TouchableOpacity style={styles.homeButton} onPress={saveHomeLocation}>
           <Text style={styles.buttonText}>🏠 Konumunu Kaydet</Text>
         </TouchableOpacity>
-        
+       
         <TouchableOpacity 
             style={[styles.homeButton, { backgroundColor: '#007AFF' }]} 
             onPress={simulateLocationChange}
@@ -1084,7 +1081,27 @@ const styles = StyleSheet.create({
   locationName: {
     fontSize: 14,
     fontWeight: '500',
-  }
+  },
+  locationPickerButton: {
+    position: 'absolute',
+    top: 10,
+    right: 60, // ThemeToggle'dan 50 + 10 pixel uzakta
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "#FF9500", // Turuncu renk
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.2,
+    shadowRadius: 3.84,
+    elevation: 5,
+    zIndex: 1,
+  },
 });
 
 export default HomeScreen;
