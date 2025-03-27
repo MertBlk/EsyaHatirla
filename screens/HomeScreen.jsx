@@ -498,63 +498,6 @@ const saveLocation = async () => {
       Alert.alert("Hata", "Konum kaydedilemedi");
     }
   };
-  const LocationPickerModal = () => {
-    const [isVisible, setIsVisible] = useState(false);
-  
-    return (
-      <>
-        <TouchableOpacity 
-          style={[styles.locationPickerButton]}
-          onPress={() => setIsVisible(true)}
-        >
-          <Text style={styles.buttonModeText}>📍</Text>
-        </TouchableOpacity>
-  
-        <Modal
-          visible={isVisible}
-          animationType="slide"
-          transparent={true}
-        >
-          <View style={styles.modalContainer}>
-            <Text style={[styles.modalTitle, { color: '#FF9500', marginTop: 50 }]}>
-              Kayıtlı Konumlar
-            </Text>
-            
-            <FlatList
-              data={savedLocations}
-              keyExtractor={(item) => item.id}
-              renderItem={({ item }) => (
-                <TouchableOpacity
-                  style={[styles.checklistItem, { 
-                    backgroundColor: homeLocation?.id === item.id ? '#34C759' : '#2C2C2E' 
-                  }]}
-                  onPress={() => {
-                    setHomeLocation(item);
-                    setIsVisible(false);
-                  }}
-                >
-                  <Text style={[styles.itemText, { 
-                    color: homeLocation?.id === item.id ? '#FFF' : '#EBEBF5' 
-                  }]}>
-                    {item.name}
-                  </Text>
-                </TouchableOpacity>
-              )}
-            />
-  
-            <TouchableOpacity 
-              style={[styles.confirmButton, { backgroundColor: '#FF9500' }]}
-              onPress={() => setIsVisible(false)}
-            >
-              <Text style={styles.buttonText}>Kapat</Text>
-            </TouchableOpacity>
-          </View>
-        </Modal>
-      </>
-    );
-  };
-    
-
   const WarningModal = () => (
     <Modal
       visible={isModalVisible}
@@ -663,19 +606,72 @@ const saveLocation = async () => {
       </View>
     </View>
   );
-  const CurrentLocationCard = () => (
-    <View style={[styles.statsCard, dynamicStyles.statsCard]}>
-      <View style={styles.currentLocationContainer}>
-        <Text style={[styles.locationTitle, dynamicStyles.text]}>
-          📍 Seçili Konum
-        </Text>
-        <Text style={[styles.locationName, dynamicStyles.categoryText]}>
-          {homeLocation?.name || 'Henüz konum seçilmedi'}
-        </Text>
-      </View>
-    </View>
-  );
-// ThemeToggle bileşenini güncelle
+  const CurrentLocationCard = () => {
+    const [isVisible, setIsVisible] = useState(false);
+  
+    return (
+      <>
+        <TouchableOpacity 
+          style={[styles.statsCard, dynamicStyles.statsCard]}
+          onPress={() => setIsVisible(true)}
+        >
+          <View style={styles.currentLocationContainer}>
+            <Text style={[styles.locationTitle, dynamicStyles.text]}>
+              📍 Seçili Konum
+            </Text>
+            <Text style={[styles.locationName, dynamicStyles.categoryText]}>
+              {homeLocation?.name || 'Henüz konum seçilmedi'}
+            </Text>
+          </View>
+        </TouchableOpacity>
+  
+        <Modal
+          visible={isVisible}
+          animationType="slide"
+          transparent={true}
+        >
+          <SafeAreaView style={styles.modalSafeArea}>
+            <View style={styles.locationModalContainer}>
+              <Text style={styles.locationModalTitle}>
+                📍 Kayıtlı Konumlar
+              </Text>
+              
+              <FlatList
+                data={savedLocations}
+                keyExtractor={(item) => item.id}
+                renderItem={({ item }) => (
+                  <TouchableOpacity
+                    style={[styles.locationItem, { 
+                      backgroundColor: homeLocation?.id === item.id ? '#34C759' : '#2C2C2E' 
+                    }]}
+                    onPress={() => {
+                      setHomeLocation(item);
+                      setIsVisible(false);
+                    }}
+                  >
+                    <Text style={[styles.locationItemText, { 
+                      color: homeLocation?.id === item.id ? '#FFF' : '#EBEBF5' 
+                    }]}>
+                      {item.name}
+                    </Text>
+                  </TouchableOpacity>
+                )}
+              />
+  
+              <TouchableOpacity 
+                style={styles.closeButton}
+                onPress={() => setIsVisible(false)}
+              >
+                <Text style={styles.buttonText}>Kapat</Text>
+              </TouchableOpacity>
+            </View>
+          </SafeAreaView>
+        </Modal>
+      </>
+    );
+  };
+  
+  // ThemeToggle bileşenini güncelle
   const ThemeToggle = () => (
     <TouchableOpacity
       style={[styles.themeToggleButton]} // homeButton yerine yeni stil
@@ -725,16 +721,362 @@ const saveLocation = async () => {
     }
   };
 
+  const styles = StyleSheet.create({
+    safeArea: {
+      flex: 1,
+      backgroundColor: "#1C1C1E",
+    },
+    container: { 
+      flex: 1, 
+      padding: 10, 
+      backgroundColor: "#1C1C1E"
+    },
+    title: { 
+      fontSize: 28, 
+      fontWeight: "bold", 
+      color: "#FFFFFF",
+      marginBottom: 12,
+    },
+    categoryWrapper: {
+      height: 40,
+      marginBottom:6,
+    },
+    categoryScrollContent: {
+      alignItems: 'center',
+      paddingVertical: 10,
+    },
+    categoryContainer: {
+      height: 40,
+      marginBottom: 8,
+      paddingVertical: 0,    
+    },
+    categoryButton: {
+      width: 100,
+      height: 36,
+      marginRight: 8,
+      borderRadius: 18,
+      backgroundColor: '#2C2C2E', // Koyu kart rengi
+      borderWidth: 1,
+      borderColor: '#3A3A3C', // Koyu kenarlık
+      alignItems: 'center',
+      justifyContent: 'center',
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.1,
+      shadowRadius: 2,
+      elevation: 2,
+    },
+    selectedCategoryButton: {
+      backgroundColor: '#007AFF',
+      borderColor: '#007AFF',
+    },
+    categoryButtonText: {
+      fontSize: 14,
+      fontWeight: '500',
+      color: '#EBEBF5', // Açık gri yazı
+    },
+    selectedCategoryText: {
+      color: '#fff',
+      fontWeight: '600',
+    },
+  
+    // Eşya listesi stil güncellemeleri
+    itemContainer: { 
+      flexDirection: "row", 
+      alignItems: "center",
+      justifyContent: "space-between", 
+      padding: 18,
+      borderRadius: 12,
+      backgroundColor: "#2C2C2E", // Koyu kart rengi
+      marginBottom: 10,
+      shadowColor: "#000",
+      shadowOffset: {
+        width: 0,
+        height: 1,
+      },
+      shadowOpacity: 0.1,
+      shadowRadius: 2,
+      elevation: 3,
+    },
+    selectedItem: { 
+      backgroundColor: "#1C1C1E", // Koyu arka plan
+      borderWidth: 1,
+      borderColor: "#34C759", // iOS yeşil renk
+    },
+    
+    itemText: { 
+      fontSize: 16,
+      fontWeight: "500",
+      color: "#FFFFFF" // Beyaz yazı
+    },
+    selectedItemText: { // Yeni stil ekle
+      color: "#34C759", // Seçili durumda yeşil yazı
+      fontWeight: "600"
+    },
+    checkIcon: { 
+      fontSize: 20, 
+      color: "#4CAF50"
+    },
+  
+    // Input ve buton stil güncellemeleri
+    input: { 
+      backgroundColor: "#fff",
+      borderWidth: 1, 
+      borderColor: "#E0E0E0", 
+      borderRadius: 12, 
+      padding: 15,
+      marginBottom: 16,
+      fontSize: 16,
+      shadowColor: "#000",
+      shadowOffset: {
+        width: 0,
+        height: 1,
+      },
+      shadowOpacity: 0.1,
+      shadowRadius: 2,
+      elevation: 2,
+    },
+    
+    homeButton: { 
+      backgroundColor: "#34C759", 
+      padding: 16,
+      marginTop: 8,
+      marginBottom: 10, 
+      borderRadius: 40,
+      shadowColor: "#000",
+      shadowOffset: {
+        width: 0,
+        height: 2,
+      },
+      shadowOpacity: 0.2,
+      shadowRadius: 3.84,
+      elevation: 5,
+    },
+    buttonText: { 
+      color: "#fff", 
+      fontSize: 16, 
+      
+      fontWeight: "600",
+      textAlign: "center"
+    },
+    addButtonText: { 
+      color: "#fff", 
+      fontSize: 16, 
+      fontWeight: "600",
+      textAlign: "center"
+    },
+    buttonModeText: {
+      color: "#fff",
+      height: 32,
+      fontSize: 24,
+      textAlign: "center",
+    },
+  
+    // Modal stil güncellemeleri
+    modalContainer: {
+      flex: 1,
+      backgroundColor: 'rgba(0,0,0,0.8)', // Koyu modal arka planı
+      justifyContent: 'center',
+      padding: 20,
+    },
+    modalTitle: {
+      fontSize: 24,
+      fontWeight: 'bold',
+      color: '#FF3B30',
+      textAlign: 'center',
+      marginBottom: 24,
+    },
+    checklistItem: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      padding: 16,
+      backgroundColor: '#2C2C2E', // Koyu kart rengi
+      borderRadius: 12,
+      marginBottom: 12,
+    },
+    confirmButton: {
+      backgroundColor: '#34C759',
+      padding: 16,
+      borderRadius: 12,
+      alignItems: 'center',
+      marginTop: 24,
+    },
+  
+    // Stil eklemeleri
+    statsCard: {
+      flexDirection: 'row',
+      backgroundColor: '#2C2C2E', // Koyu kart rengi
+      borderRadius: 12,
+      padding: 8,
+      marginBottom: 8,
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.1,
+      shadowRadius: 2,
+      elevation: 2,
+    },
+    statItem: {
+      flex: 1,
+      alignItems: 'center', 
+      
+      marginBottom: 16,
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.1,
+      shadowRadius: 4,
+      elevation: 3,
+    },
+    statItem: {
+      flex: 1,
+      alignItems: 'center',
+    },
+    statNumber: {
+      fontSize: 24,
+      fontWeight: 'bold',
+      color: '#0A84FF', // iOS mavi
+    },
+    statLabel: {
+      fontSize: 14,
+      color: '#EBEBF5', // Açık gri yazı
+      marginTop: 4,
+    },
+    statDivider: {
+      width: 1,
+      backgroundColor: '#3A3A3C', // Koyu ayırıcı çizgi
+      marginHorizontal: 16,
+    },
+    loadingContainer: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      backgroundColor: 'rgba(0,0,0,0.8)', // Koyu yükleme arka planı
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    themeToggleButton: {
+      position: 'absolute',
+      top: 10,
+      right: 10,
+      width: 40, // Genişliği küçült
+      height: 40, // Yüksekliği küçült
+      borderRadius: 20, // Tam yuvarlak için width/2
+      backgroundColor: "#34C759",
+      justifyContent: 'center',
+      alignItems: 'center',
+      shadowColor: "#000",
+      shadowOffset: {
+        width: 0,
+        height: 2,
+      },
+      shadowOpacity: 0.2,
+      shadowRadius: 3.84,
+      elevation: 5,
+      zIndex: 1, // Diğer elementlerin üzerinde görünmesi için
+    },
+    buttonModeText: {
+      color: "#fff",
+      fontSize: 20, // Emoji boyutunu küçült
+      textAlign: "center",
+    },
+    testButton: {
+      backgroundColor: '#007AFF',
+      padding: 16,
+      marginTop: 8,
+      marginBottom: 8,
+      borderRadius: 40,
+      shadowColor: "#000",
+      shadowOffset: {
+        width: 0,
+        height: 2,
+      },
+      shadowOpacity: 0.2,
+      shadowRadius: 3.84,
+      elevation: 5,
+    },
+    currentLocationContainer: {
+      flex: 1,
+      padding: 8,
+    },
+    locationTitle: {
+      fontSize: 16,
+      fontWeight: '600',
+      marginBottom: 4,
+    },
+    locationName: {
+      fontSize: 14,
+      fontWeight: '500',
+    },
+    locationPickerButton: {
+      position: 'absolute',
+      top: 10,
+      right: 60, // ThemeToggle'dan 50 + 10 pixel uzakta
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      backgroundColor: "#FF9500", // Turuncu renk
+      justifyContent: 'center',
+      alignItems: 'center',
+      shadowColor: "#000",
+      shadowOffset: {
+        width: 0,
+        height: 2,
+      },
+      shadowOpacity: 0.2,
+      shadowRadius: 3.84,
+      elevation: 5,
+      zIndex: 1,
+    },
+    modalSafeArea: {
+      flex: 1,
+      backgroundColor: isDarkMode ? 'rgba(0,0,0,0.95)' : 'rgba(255,255,255,0.95)',
+    },
+    locationModalContainer: {
+      flex: 1,
+      paddingHorizontal: 20,
+      paddingTop: 60,
+      paddingBottom: 20,
+    },
+    locationModalTitle: {
+      fontSize: 24,
+      fontWeight: 'bold',
+      color: '#FF9500',
+      textAlign: 'center',
+      marginBottom: 20,
+    },
+    locationItem: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      padding: 16,
+      backgroundColor: '#2C2C2E',
+      borderRadius: 12,
+      marginBottom: 12,
+    },
+    locationItemText: {
+      fontSize: 16,
+      fontWeight: '500',
+      color: '#FFFFFF',
+    },
+    closeButton: {
+      backgroundColor: '#FF9500',
+      padding: 16,
+      borderRadius: 12,
+      alignItems: 'center',
+      marginTop: 'auto',
+    },
+  });
+
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: isDarkMode ? '#1C1C1E' : '#F2F2F7' }]}>
-      <View style={[styles.container, dynamicStyles.container, { backgroundColor: isDarkMode ? theme.dark.background : theme.light.background }]}>
+    <SafeAreaView style={[styles.safeArea]}>
+      <View style={[styles.container]}>
       <StatusBar barStyle={isDarkMode ? "light-content" : "dark-content"} />
       <Text style={[styles.title, dynamicStyles.text]}>
         Unutma! Yanına al
       </Text>
         
         <ThemeToggle /> {/* Tema değiştirme butonu */}
-        <LocationPickerModal />
         
         <CategorySelector />
 
@@ -793,315 +1135,5 @@ const saveLocation = async () => {
     </SafeAreaView>
   );
 };
-
-const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: "#1C1C1E",
-  },
-  container: { 
-    flex: 1, 
-    padding: 10, 
-    backgroundColor: "#1C1C1E"
-  },
-  title: { 
-    fontSize: 28, 
-    fontWeight: "bold", 
-    color: "#FFFFFF",
-    marginBottom: 12,
-  },
-  categoryWrapper: {
-    height: 40,
-    marginBottom:6,
-  },
-  categoryScrollContent: {
-    alignItems: 'center',
-    paddingVertical: 10,
-  },
-  categoryContainer: {
-    height: 40,
-    marginBottom: 8,
-    paddingVertical: 0,    
-  },
-  categoryButton: {
-    width: 100,
-    height: 36,
-    marginRight: 8,
-    borderRadius: 18,
-    backgroundColor: '#2C2C2E', // Koyu kart rengi
-    borderWidth: 1,
-    borderColor: '#3A3A3C', // Koyu kenarlık
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-  selectedCategoryButton: {
-    backgroundColor: '#007AFF',
-    borderColor: '#007AFF',
-  },
-  categoryButtonText: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#EBEBF5', // Açık gri yazı
-  },
-  selectedCategoryText: {
-    color: '#fff',
-    fontWeight: '600',
-  },
-
-  // Eşya listesi stil güncellemeleri
-  itemContainer: { 
-    flexDirection: "row", 
-    alignItems: "center",
-    justifyContent: "space-between", 
-    padding: 18,
-    borderRadius: 12,
-    backgroundColor: "#2C2C2E", // Koyu kart rengi
-    marginBottom: 10,
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 1,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 3,
-  },
-  selectedItem: { 
-    backgroundColor: "#1C1C1E", // Koyu arka plan
-    borderWidth: 1,
-    borderColor: "#34C759", // iOS yeşil renk
-  },
-  
-  itemText: { 
-    fontSize: 16,
-    fontWeight: "500",
-    color: "#FFFFFF" // Beyaz yazı
-  },
-  selectedItemText: { // Yeni stil ekle
-    color: "#34C759", // Seçili durumda yeşil yazı
-    fontWeight: "600"
-  },
-  checkIcon: { 
-    fontSize: 20, 
-    color: "#4CAF50"
-  },
-
-  // Input ve buton stil güncellemeleri
-  input: { 
-    backgroundColor: "#fff",
-    borderWidth: 1, 
-    borderColor: "#E0E0E0", 
-    borderRadius: 12, 
-    padding: 15,
-    marginBottom: 16,
-    fontSize: 16,
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 1,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-  
-  homeButton: { 
-    backgroundColor: "#34C759", 
-    padding: 16,
-    marginTop: 8,
-    marginBottom: 10, 
-    borderRadius: 40,
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.2,
-    shadowRadius: 3.84,
-    elevation: 5,
-  },
-  buttonText: { 
-    color: "#fff", 
-    fontSize: 16, 
-    
-    fontWeight: "600",
-    textAlign: "center"
-  },
-  addButtonText: { 
-    color: "#fff", 
-    fontSize: 16, 
-    fontWeight: "600",
-    textAlign: "center"
-  },
-  buttonModeText: {
-    color: "#fff",
-    height: 32,
-    fontSize: 24,
-    textAlign: "center",
-  },
-
-  // Modal stil güncellemeleri
-  modalContainer: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.8)', // Koyu modal arka planı
-    justifyContent: 'center',
-    padding: 20,
-  },
-  modalTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#FF3B30',
-    textAlign: 'center',
-    marginBottom: 24,
-  },
-  checklistItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 16,
-    backgroundColor: '#2C2C2E', // Koyu kart rengi
-    borderRadius: 12,
-    marginBottom: 12,
-  },
-  confirmButton: {
-    backgroundColor: '#34C759',
-    padding: 16,
-    borderRadius: 12,
-    alignItems: 'center',
-    marginTop: 24,
-  },
-
-  // Stil eklemeleri
-  statsCard: {
-    flexDirection: 'row',
-    backgroundColor: '#2C2C2E', // Koyu kart rengi
-    borderRadius: 12,
-    padding: 8,
-    marginBottom: 8,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-  statItem: {
-    flex: 1,
-    alignItems: 'center', 
-    
-    marginBottom: 16,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  statItem: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  statNumber: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#0A84FF', // iOS mavi
-  },
-  statLabel: {
-    fontSize: 14,
-    color: '#EBEBF5', // Açık gri yazı
-    marginTop: 4,
-  },
-  statDivider: {
-    width: 1,
-    backgroundColor: '#3A3A3C', // Koyu ayırıcı çizgi
-    marginHorizontal: 16,
-  },
-  loadingContainer: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(0,0,0,0.8)', // Koyu yükleme arka planı
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  themeToggleButton: {
-    position: 'absolute',
-    top: 10,
-    right: 10,
-    width: 40, // Genişliği küçült
-    height: 40, // Yüksekliği küçült
-    borderRadius: 20, // Tam yuvarlak için width/2
-    backgroundColor: "#34C759",
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.2,
-    shadowRadius: 3.84,
-    elevation: 5,
-    zIndex: 1, // Diğer elementlerin üzerinde görünmesi için
-  },
-  buttonModeText: {
-    color: "#fff",
-    fontSize: 20, // Emoji boyutunu küçült
-    textAlign: "center",
-  },
-  testButton: {
-    backgroundColor: '#007AFF',
-    padding: 16,
-    marginTop: 8,
-    marginBottom: 8,
-    borderRadius: 40,
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.2,
-    shadowRadius: 3.84,
-    elevation: 5,
-  },
-  currentLocationContainer: {
-    flex: 1,
-    padding: 8,
-  },
-  locationTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    marginBottom: 4,
-  },
-  locationName: {
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  locationPickerButton: {
-    position: 'absolute',
-    top: 10,
-    right: 60, // ThemeToggle'dan 50 + 10 pixel uzakta
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: "#FF9500", // Turuncu renk
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.2,
-    shadowRadius: 3.84,
-    elevation: 5,
-    zIndex: 1,
-  },
-});
 
 export default HomeScreen;
