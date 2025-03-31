@@ -504,13 +504,13 @@ const saveLocation = async () => {
       transparent={true}
       animationType="slide"
     >
-      <View style={styles.modalContainer}>
+      <View style={[styles.modalContainer, dynamicStyles.modalContainer]}>
         <Text style={styles.modalTitle}>
           <Text>⚠️</Text>
           <Text> Eşya Kontrol Listesi</Text>
         </Text>
         {selectedItems.map(item => (
-          <View key={item} style={styles.checklistItem}>
+          <View key={item} style={[styles.checklistItem, dynamicStyles.checklistItem]}>
             <Text style={styles.itemText}>{item}</Text>
             <CheckBox
               value={false}
@@ -630,8 +630,8 @@ const saveLocation = async () => {
           animationType="slide"
           transparent={true}
         >
-          <SafeAreaView style={styles.modalSafeArea}>
-            <View style={styles.locationModalContainer}>
+          <SafeAreaView style={[styles.modalSafeArea, dynamicStyles.modalBackground]}>
+            <View style={[styles.locationModalContainer, dynamicStyles.modalContent]}>
               <Text style={styles.locationModalTitle}>
                 📍 Kayıtlı Konumlar
               </Text>
@@ -641,16 +641,16 @@ const saveLocation = async () => {
                 keyExtractor={(item) => item.id}
                 renderItem={({ item }) => (
                   <TouchableOpacity
-                    style={[styles.locationItem, { 
-                      backgroundColor: homeLocation?.id === item.id ? '#34C759' : '#2C2C2E' 
+                    style={[styles.locationItem, dynamicStyles.locationItem, { 
+                      backgroundColor: homeLocation?.id === item.id ? '#34C759' : dynamicStyles.locationItem.backgroundColor 
                     }]}
                     onPress={() => {
                       setHomeLocation(item);
                       setIsVisible(false);
                     }}
                   >
-                    <Text style={[styles.locationItemText, { 
-                      color: homeLocation?.id === item.id ? '#FFF' : '#EBEBF5' 
+                    <Text style={[styles.locationItemText, dynamicStyles.locationItemText, { 
+                      color: homeLocation?.id === item.id ? '#FFF' : dynamicStyles.locationItemText.color 
                     }]}>
                       {item.name}
                     </Text>
@@ -686,7 +686,27 @@ const saveLocation = async () => {
 
   const dynamicStyles = {
     container: {
-      backgroundColor: isDarkMode ? '#1C1C1E' : '#F2F2F7'
+      backgroundColor: isDarkMode ? '#1C1C1E' : '#FFFFFF'
+    },
+    safeArea: {
+      backgroundColor: isDarkMode ? '#1C1C1E' : '#FFFFFF'
+    },
+    modalContainer: {
+      backgroundColor: isDarkMode ? 'rgba(0,0,0,0.8)' : 'rgba(255,255,255,0.9)'
+    },
+    modalContent: {
+      backgroundColor: isDarkMode ? '#2C2C2E' : '#FFFFFF'
+    },
+    locationItem: {
+      backgroundColor: isDarkMode ? '#2C2C2E' : '#FFFFFF',
+      borderColor: isDarkMode ? '#3A3A3C' : '#E5E5EA'
+    },
+    locationItemText: {
+      color: isDarkMode ? '#FFFFFF' : '#000000'
+    },
+    checklistItem: {
+      backgroundColor: isDarkMode ? '#2C2C2E' : '#FFFFFF',
+      borderColor: isDarkMode ? '#3A3A3C' : '#E5E5EA'
     },
     itemContainer: {
       backgroundColor: isDarkMode ? '#2C2C2E' : '#FFFFFF',
@@ -707,17 +727,16 @@ const saveLocation = async () => {
       borderColor: '#007AFF'
     },
     statsCard: {
-      backgroundColor: isDarkMode ? '#2C2C2E' : '#FFFFFF'
+      backgroundColor: isDarkMode ? '#2C2C2E' : '#FFFFFF',
+      borderColor: isDarkMode ? '#3A3A3C' : '#E5E5EA'
     },
     selectedItem: {
       backgroundColor: isDarkMode ? '#1C1C1E' : '#F2F2F7',
       borderWidth: 2,
-      borderColor: "#34C759",
-      shadowColor: "#34C759",
-      shadowOffset: { width: 0, height: 0 },
-      shadowOpacity: 0.3,
-      shadowRadius: 4,
-      elevation: 4
+      borderColor: "#34C759"
+    },
+    modalBackground: {
+      backgroundColor: isDarkMode ? 'rgba(0,0,0,0.95)' : 'rgba(255,255,255,0.95)'
     }
   };
 
@@ -1069,8 +1088,8 @@ const saveLocation = async () => {
   });
 
   return (
-    <SafeAreaView style={[styles.safeArea]}>
-      <View style={[styles.container]}>
+    <SafeAreaView style={[styles.safeArea, dynamicStyles.safeArea]}>
+      <View style={[styles.container, dynamicStyles.container]}>
       <StatusBar barStyle={isDarkMode ? "light-content" : "dark-content"} />
       <Text style={[styles.title, dynamicStyles.text]}>
         Unutma! Yanına al
