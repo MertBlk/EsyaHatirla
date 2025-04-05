@@ -1137,7 +1137,7 @@ const saveLocation = async () => {
             <ActivityIndicator size="large" color="#007AFF" />
           </View>
         )}
-        <TouchableOpacity style={styles.homeButton} onPress={saveHomeLocation}>
+        <TouchableOpacity style={styles.homeButton} onPress={saveHomeLocation}> 
           <Text style={styles.buttonText}>🏠 Konumunu Kaydet</Text>
         </TouchableOpacity>
        
@@ -1149,10 +1149,10 @@ const saveLocation = async () => {
           </TouchableOpacity>
           
 
-        <WarningModal />
+        <WarningModal />             
       </View>
     </SafeAreaView>
   );
 };
 
-export default HomeScreen;
+export default HomeScreen; 
