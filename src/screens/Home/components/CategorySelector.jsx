@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, ScrollView, TouchableOpacity, Text } from 'react-native';
+import { ScrollView, TouchableOpacity, Text } from 'react-native';
 import { categoryIcons } from '../../../constants/categories';
 
 export const CategorySelector = ({ 
@@ -8,36 +8,41 @@ export const CategorySelector = ({
   styles, 
   dynamicStyles 
 }) => {
-  // Tüm kategorileri birleştir
   const allCategories = ['Tümü', ...Object.keys(categoryIcons).filter(cat => cat !== 'Tümü')];
 
   return (
-    <View style={styles.categoryWrapper}>
-      <ScrollView 
-        horizontal 
-        showsHorizontalScrollIndicator={false} 
-        contentContainerStyle={styles.categoryScrollContent}
-      >
-        {allCategories.map(category => (
-          <TouchableOpacity
-            key={`category-${category}`} // Unique key eklendi
+    <ScrollView 
+      horizontal 
+      showsHorizontalScrollIndicator={false}
+      style={styles.categoryWrapper}
+      contentContainerStyle={styles.categoryScrollContent}
+    >
+      {allCategories.map((category) => (
+        <TouchableOpacity
+          key={category}
+          style={[
+            styles.categoryButton,
+            dynamicStyles.categoryButton,
+            selectedCategory === category && {
+              backgroundColor: '#007AFF',
+              borderColor: '#007AFF',
+              // transform efekti kaldırıldı
+            }
+          ]}
+          onPress={() => setSelectedCategory(category)}
+        >
+          <Text 
             style={[
-              styles.categoryButton,
-              dynamicStyles.categoryButton,
-              selectedCategory === category && dynamicStyles.selectedCategory
-            ]}
-            onPress={() => setSelectedCategory(category)}
-          >
-            <Text style={[
               styles.categoryButtonText,
-              dynamicStyles.categoryText,
-              selectedCategory === category && styles.selectedCategoryText
-            ]}>
-              {categoryIcons[category] || '📋'} {category}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
-    </View>
+              selectedCategory === category 
+                ? { color: '#FFFFFF', fontWeight: '600' }
+                : dynamicStyles.text
+            ]}
+          >
+            {categoryIcons[category] || '📋'} {category}
+          </Text>
+        </TouchableOpacity>
+      ))}
+    </ScrollView>
   );
 };

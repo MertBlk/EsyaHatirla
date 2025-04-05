@@ -16,22 +16,22 @@ export const StatsCard = ({
 
   return (
     <View style={[styles.statsCard, dynamicStyles.statsCard]}>
-      <View style={styles.statItem}>
-        <Text style={[styles.statNumber, dynamicStyles.text]}>
+      <View style={[styles.statItem, dynamicStyles.statItem]}>
+        <Text style={[styles.statNumber, dynamicStyles.statNumber]}>
           {selectedCount}
         </Text>
-        <Text style={[styles.statLabel, dynamicStyles.textSecondary]}>
+        <Text style={[styles.statLabel, dynamicStyles.statLabel]}>
           Seçili
         </Text>
       </View>
 
-      <View style={styles.statDivider} />
+      <View style={dynamicStyles.statDivider} />
 
-      <View style={styles.statItem}>
-        <Text style={[styles.statNumber, dynamicStyles.text]}>
+      <View style={[styles.statItem, dynamicStyles.statItem]}>
+        <Text style={[styles.statNumber, dynamicStyles.statNumber]}>
           {totalItems}
         </Text>
-        <Text style={[styles.statLabel, dynamicStyles.textSecondary]}>
+        <Text style={[styles.statLabel, dynamicStyles.statLabel]}>
           Toplam
         </Text>
       </View>

@@ -3,50 +3,48 @@ import { View, FlatList, TouchableOpacity, Text } from 'react-native';
 import { categorizedItems } from '../../../constants/categories';
 
 export const ItemList = ({ 
-  selectedCategory,
+  items, 
   selectedItems, 
   setSelectedItems, 
   styles, 
   dynamicStyles 
 }) => {
-  const getFilteredItems = () => {
-    if (selectedCategory === 'Tümü') {
-      return Object.values(categorizedItems).flat();
-    }
-    return categorizedItems[selectedCategory] || [];
+  const toggleItem = (item) => {
+    setSelectedItems(prev =>
+      prev.includes(item) 
+        ? prev.filter(i => i !== item) 
+        : [...prev, item]
+    );
   };
 
   return (
     <FlatList
-      data={getFilteredItems()}
+      data={items}
       keyExtractor={(item, index) => `item-${item}-${index}`}
-      renderItem={({ item }) => (
-        <TouchableOpacity
-          style={[
-            styles.itemContainer,
-            dynamicStyles.itemContainer,
-            selectedItems.includes(item) && styles.selectedItem,
-          ]}
-          onPress={() =>
-            setSelectedItems(prev =>
-              prev.includes(item) 
-                ? prev.filter(i => i !== item) 
-                : [...prev, item]
-            )
-          }
-        >
-          <Text style={[
-            styles.itemText,
-            dynamicStyles.text,
-            selectedItems.includes(item) && dynamicStyles.selectedItemText
-          ]}>
-            {item}
-          </Text>
-          {selectedItems.includes(item) && (
-            <Text style={styles.checkIcon}>✔️</Text>
-          )}
-        </TouchableOpacity>
-      )}
+      renderItem={({ item }) => {
+        const isSelected = selectedItems.includes(item);
+        return (
+          <TouchableOpacity
+            style={[
+              styles.itemContainer,
+              dynamicStyles.itemContainer,
+              isSelected && dynamicStyles.selectedItem // styles.selectedItem yerine dynamicStyles.selectedItem kullan
+            ]}
+            onPress={() => toggleItem(item)}
+          >
+            <Text style={[
+              styles.itemText,
+              !isSelected && dynamicStyles.text, // Seçili değilse tema rengini kullan
+              isSelected && dynamicStyles.selectedItemText // Seçiliyse dinamik seçili rengi kullan
+            ]}>
+              {item}
+            </Text>
+            {isSelected && (
+              <Text style={styles.checkIcon}>✔️</Text>
+            )}
+          </TouchableOpacity>
+        );
+      }}
       showsVerticalScrollIndicator={false}
       contentContainerStyle={{ paddingBottom: 20 }}
     />
