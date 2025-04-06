@@ -51,11 +51,11 @@
       <true/>
     </dict>
     <key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-    <string>EsyaHatirla uygulaması konumunuzu takip etmek için konum bilgisine ihtiyaç duyar.</string>
+    <string>Evden uzaklaştığınızda sizi uyarmak için arka planda konum izninize ihtiyacımız var</string>
     <key>NSLocationAlwaysUsageDescription</key>
-    <string>Allow $(PRODUCT_NAME) to access your location</string>
+    <string>Evden uzaklaştığınızda sizi uyarmak için arka planda konum izninize ihtiyacımız var</string>
     <key>NSLocationWhenInUseUsageDescription</key>
-    <string>Konumunuzu takip etmek için gerekli</string>
+    <string>Eşyalarınızı hatırlatmak için konumunuza ihtiyacımız var</string>
     <key>UIBackgroundModes</key>
     <array>
       <string>location</string>

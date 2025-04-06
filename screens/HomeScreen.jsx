@@ -6,6 +6,7 @@ import * as Notifications from 'expo-notifications';
 import NetInfo from "@react-native-community/netinfo";
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { createDynamicStyles, styles } from '../src/styles/HomeScreen.styles';
 
 // 1. Sabit değişkenleri en üste ekle
 const EARTH_RADIUS = 6371e3; // Dünya yarıçapı (metre)
@@ -154,9 +155,30 @@ const HomeScreen = () => {
           shouldShowAlert: true,
           shouldPlaySound: true,
           shouldSetBadge: false,
-          priority: 'high'
+          priority: 'high',
+          categoryIdentifier: 'items' // Kategori tanımlayıcısı ekleyin
         }),
       });
+
+      // Bildirim kategorisi ve butonları tanımlayın
+      await Notifications.setNotificationCategoryAsync('items', [
+        {
+          identifier: 'yes',
+          buttonTitle: '✅ Evet, Aldım',
+          options: {
+            isDestructive: false,
+            isAuthenticationRequired: false,
+          }
+        },
+        {
+          identifier: 'no',
+          buttonTitle: '❌ Hayır, Unuttum',
+          options: {
+            isDestructive: true,
+            isAuthenticationRequired: false,
+          }
+        }
+      ]);
     };
     
     setupNotifications();
@@ -408,27 +430,56 @@ const saveLocation = async () => {
       // Titreşim paterni
       Vibration.vibrate([500, 200, 500]);
       
-      // Seçili eşyaları formatlı metne dönüştür
       const itemsList = selectedItems.length > 0 
-        ? `${selectedItems.join('\n• ')}` // Her eşya için yeni satır ve madde işareti
+        ? `${selectedItems.join('\n• ')}` 
         : 'Hiç eşya seçmedin!';
-  
-      // Bildirim gönder
+
+      // Bildirimi gönder
       await Notifications.scheduleNotificationAsync({
         content: {
           title: "⚠️ Dikkat! Evden Uzaklaşıyorsun!",
-          body: selectedItems.length > 0
-            ? `Seçili Eşyaların:\n• ${itemsList}`
-            : 'Hiç eşya seçmedin! Kontrol et!',
+          body: `Seçili Eşyaların:\n• ${itemsList}`,
           sound: 'default',
           priority: 'high',
-          badge: selectedItems.length
+          badge: selectedItems.length,
+          categoryIdentifier: 'items', // Kategori tanımlayıcısını ekleyin
+          data: { type: 'reminder' }
         },
-        trigger: null,
+        trigger: null
       });
-  
-      console.log('Uyarı gönderildi - Seçili eşyalar:', itemsList); // Debug için
-  
+
+      // Bildirim yanıtlarını dinle
+      const subscription = Notifications.addNotificationResponseReceivedListener(response => {
+        const { actionIdentifier } = response;
+        
+        if (actionIdentifier === 'yes') {
+          // Evet'e tıklandığında
+          Notifications.scheduleNotificationAsync({
+            content: {
+              title: "✅ Harika! İyi yolculuklar!",
+              body: "Tüm eşyalarını aldığını onayladın.",
+              sound: 'default'
+            },
+            trigger: null
+          });
+        } else if (actionIdentifier === 'no') {
+          // Hayır'a tıklandığında
+          Vibration.vibrate([1000, 500, 1000]);
+          Notifications.scheduleNotificationAsync({
+            content: {
+              title: "🚨 Acil! Eşyalarını Unutuyorsun!",
+              body: `Lütfen geri dön ve şunları al:\n• ${itemsList}`,
+              sound: 'default',
+              priority: 'high'
+            },
+            trigger: null
+          });
+        }
+      });
+
+      // Temizlik fonksiyonu
+      return () => subscription.remove();
+
     } catch (error) {
       console.error('Uyarı hatası:', error);
     }
@@ -498,37 +549,7 @@ const saveLocation = async () => {
       Alert.alert("Hata", "Konum kaydedilemedi");
     }
   };
-  const WarningModal = () => (
-    <Modal
-      visible={isModalVisible}
-      transparent={true}
-      animationType="slide"
-    >
-      <View style={[styles.modalContainer, dynamicStyles.modalContainer]}>
-        <Text style={styles.modalTitle}>
-          <Text>⚠️</Text>
-          <Text> Eşya Kontrol Listesi</Text>
-        </Text>
-        {selectedItems.map(item => (
-          <View key={item} style={[styles.checklistItem, dynamicStyles.checklistItem]}>
-            <Text style={[styles.itemText, dynamicStyles.text]}>{item}</Text>
-            <CheckBox
-              value={false}
-              onValueChange={() => {}}
-              tintColors={{ true: '#34C759', false: '#767577' }}
-              style={styles.checkbox}
-            />
-          </View>
-        ))}
-        <TouchableOpacity 
-          style={styles.confirmButton}
-          onPress={() => setModalVisible(false)}
-        >
-          <Text style={[styles.buttonText, { color: '#FFFFFF' }]}>Kontrol Ettim</Text>
-        </TouchableOpacity>
-      </View>
-    </Modal>
-  );
+  
 
   // CategorySelector bileşenini güncelle
   const CategorySelector = () => (
@@ -684,408 +705,7 @@ const saveLocation = async () => {
     </TouchableOpacity>
   );
 
-  const dynamicStyles = {
-    container: {
-      backgroundColor: isDarkMode ? '#1C1C1E' : '#FFFFFF'
-    },
-    safeArea: {
-      backgroundColor: isDarkMode ? '#1C1C1E' : '#FFFFFF'
-    },
-    modalContainer: {
-      backgroundColor: isDarkMode ? 'rgba(0,0,0,0.8)' : 'rgba(255,255,255,0.9)'
-    },
-    modalContent: {
-      backgroundColor: isDarkMode ? '#2C2C2E' : '#FFFFFF'
-    },
-    locationItem: {
-      backgroundColor: isDarkMode ? '#2C2C2E' : '#FFFFFF',
-      borderColor: isDarkMode ? '#3A3A3C' : '#E5E5EA'
-    },
-    locationItemText: {
-      color: isDarkMode ? '#FFFFFF' : '#000000'
-    },
-    checklistItem: {
-      backgroundColor: isDarkMode ? '#2C2C2E' : '#FFFFFF',
-      borderColor: isDarkMode ? '#3A3A3C' : '#E5E5EA'
-    },
-    itemContainer: {
-      backgroundColor: isDarkMode ? '#2C2C2E' : '#FFFFFF',
-      borderColor: isDarkMode ? '#3A3A3C' : '#E5E5EA'
-    },
-    text: {
-      color: isDarkMode ? '#FFFFFF' : '#000000'
-    },
-    categoryButton: {
-      backgroundColor: isDarkMode ? '#2C2C2E' : '#FFFFFF',
-      borderColor: isDarkMode ? '#3A3A3C' : '#E5E5EA'
-    },
-    categoryText: {
-      color: isDarkMode ? '#EBEBF5' : '#666666'
-    },
-    selectedCategory: {
-      backgroundColor: '#007AFF',
-      borderColor: '#007AFF'
-    },
-    statsCard: {
-      backgroundColor: isDarkMode ? '#2C2C2E' : '#FFFFFF',
-      borderColor: isDarkMode ? '#3A3A3C' : '#E5E5EA'
-    },
-    selectedItem: {
-      backgroundColor: isDarkMode ? '#1C1C1E' : '#F2F2F7',
-      borderWidth: 2,
-      borderColor: "#34C759"
-    },
-    modalBackground: {
-      backgroundColor: isDarkMode ? 'rgba(0,0,0,0.95)' : 'rgba(255,255,255,0.95)'
-    }
-  };
-
-  const styles = StyleSheet.create({
-    safeArea: {
-      flex: 1,
-      backgroundColor: "#1C1C1E",
-    },
-    container: { 
-      flex: 1, 
-      padding: 10, 
-      backgroundColor: "#1C1C1E"
-    },
-    title: { 
-      fontSize: 28, 
-      fontWeight: "bold", 
-      color: "#FFFFFF",
-      marginBottom: 12,
-    },
-    categoryWrapper: {
-      height: 40,
-      marginBottom:6,
-    },
-    categoryScrollContent: {
-      alignItems: 'center',
-      paddingVertical: 10,
-    },
-    categoryContainer: {
-      height: 40,
-      marginBottom: 8,
-      paddingVertical: 0,    
-    },
-    categoryButton: {
-      width: 100,
-      height: 36,
-      marginRight: 8,
-      borderRadius: 18,
-      backgroundColor: '#2C2C2E', // Koyu kart rengi
-      borderWidth: 1,
-      borderColor: '#3A3A3C', // Koyu kenarlık
-      alignItems: 'center',
-      justifyContent: 'center',
-      shadowColor: "#000",
-      shadowOffset: { width: 0, height: 1 },
-      shadowOpacity: 0.1,
-      shadowRadius: 2,
-      elevation: 2,
-    },
-    selectedCategoryButton: {
-      backgroundColor: '#007AFF',
-      borderColor: '#007AFF',
-    },
-    categoryButtonText: {
-      fontSize: 14,
-      fontWeight: '500',
-      color: '#EBEBF5', // Açık gri yazı
-    },
-    selectedCategoryText: {
-      color: '#fff',
-      fontWeight: '600',
-    },
-  
-    // Eşya listesi stil güncellemeleri
-    itemContainer: { 
-      flexDirection: "row", 
-      alignItems: "center",
-      justifyContent: "space-between", 
-      padding: 18,
-      borderRadius: 12,
-      backgroundColor: "#2C2C2E", // Koyu kart rengi
-      marginBottom: 10,
-      shadowColor: "#000",
-      shadowOffset: {
-        width: 0,
-        height: 1,
-      },
-      shadowOpacity: 0.1,
-      shadowRadius: 2,
-      elevation: 3,
-    },
-    selectedItem: { 
-      backgroundColor: "#1C1C1E", // Koyu arka plan
-      borderWidth: 1,
-      borderColor: "#34C759", // iOS yeşil renk
-    },
-    
-    itemText: { 
-      fontSize: 16,
-      fontWeight: "500",
-      color: "#FFFFFF" // Beyaz yazı
-    },
-    selectedItemText: { // Yeni stil ekle
-      color: "#34C759", // Seçili durumda yeşil yazı
-      fontWeight: "600"
-    },
-    checkIcon: { 
-      fontSize: 20, 
-      color: "#4CAF50"
-    },
-  
-    // Input ve buton stil güncellemeleri
-    input: { 
-      backgroundColor: "#fff",
-      borderWidth: 1, 
-      borderColor: "#E0E0E0", 
-      borderRadius: 12, 
-      padding: 15,
-      marginBottom: 16,
-      fontSize: 16,
-      shadowColor: "#000",
-      shadowOffset: {
-        width: 0,
-        height: 1,
-      },
-      shadowOpacity: 0.1,
-      shadowRadius: 2,
-      elevation: 2,
-    },
-    
-    homeButton: { 
-      backgroundColor: "#34C759", 
-      padding: 16,
-      marginTop: 8,
-      marginBottom: 10, 
-      borderRadius: 40,
-      shadowColor: "#000",
-      shadowOffset: {
-        width: 0,
-        height: 2,
-      },
-      shadowOpacity: 0.2,
-      shadowRadius: 3.84,
-      elevation: 5,
-    },
-    buttonText: { 
-      color: "#fff", 
-      fontSize: 16, 
-      
-      fontWeight: "600",
-      textAlign: "center"
-    },
-    addButtonText: { 
-      color: "#fff", 
-      fontSize: 16, 
-      fontWeight: "600",
-      textAlign: "center"
-    },
-    buttonModeText: {
-      color: "#fff",
-      height: 32,
-      fontSize: 24,
-      textAlign: "center",
-    },
-  
-    // Modal stil güncellemeleri
-    modalContainer: {
-      flex: 1,
-      backgroundColor: 'rgba(0,0,0,0.8)', // Koyu modal arka planı
-      justifyContent: 'center',
-      padding: 20,
-    },
-    modalTitle: {
-      fontSize: 24,
-      fontWeight: 'bold',
-      color: '#FF3B30',
-      textAlign: 'center',
-      marginBottom: 24,
-    },
-    checklistItem: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      padding: 16,
-      backgroundColor: '#2C2C2E', // Koyu kart rengi
-      borderRadius: 12,
-      marginBottom: 12,
-    },
-    confirmButton: {
-      backgroundColor: '#34C759',
-      padding: 16,
-      borderRadius: 12,
-      alignItems: 'center',
-      marginTop: 24,
-    },
-  
-    // Stil eklemeleri
-    statsCard: {
-      flexDirection: 'row',
-      backgroundColor: '#2C2C2E', // Koyu kart rengi
-      borderRadius: 12,
-      padding: 8,
-      marginBottom: 8,
-      shadowColor: "#000",
-      shadowOffset: { width: 0, height: 1 },
-      shadowOpacity: 0.1,
-      shadowRadius: 2,
-      elevation: 2,
-    },
-    statItem: {
-      flex: 1,
-      alignItems: 'center', 
-      
-      marginBottom: 16,
-      shadowColor: "#000",
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.1,
-      shadowRadius: 4,
-      elevation: 3,
-    },
-    statItem: {
-      flex: 1,
-      alignItems: 'center',
-    },
-    statNumber: {
-      fontSize: 24,
-      fontWeight: 'bold',
-      color: '#0A84FF', // iOS mavi
-    },
-    statLabel: {
-      fontSize: 14,
-      color: '#EBEBF5', // Açık gri yazı
-      marginTop: 4,
-    },
-    statDivider: {
-      width: 1,
-      backgroundColor: '#3A3A3C', // Koyu ayırıcı çizgi
-      marginHorizontal: 16,
-    },
-    loadingContainer: {
-      position: 'absolute',
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
-      backgroundColor: 'rgba(0,0,0,0.8)', // Koyu yükleme arka planı
-      justifyContent: 'center',
-      alignItems: 'center',
-    },
-    themeToggleButton: {
-      position: 'absolute',
-      top: 10,
-      right: 10,
-      width: 40, // Genişliği küçült
-      height: 40, // Yüksekliği küçült
-      borderRadius: 20, // Tam yuvarlak için width/2
-      backgroundColor: "#34C759",
-      justifyContent: 'center',
-      alignItems: 'center',
-      shadowColor: "#000",
-      shadowOffset: {
-        width: 0,
-        height: 2,
-      },
-      shadowOpacity: 0.2,
-      shadowRadius: 3.84,
-      elevation: 5,
-      zIndex: 1, // Diğer elementlerin üzerinde görünmesi için
-    },
-    buttonModeText: {
-      color: "#fff",
-      fontSize: 20, // Emoji boyutunu küçült
-      textAlign: "center",
-    },
-    testButton: {
-      backgroundColor: '#007AFF',
-      padding: 16,
-      marginTop: 8,
-      marginBottom: 8,
-      borderRadius: 40,
-      shadowColor: "#000",
-      shadowOffset: {
-        width: 0,
-        height: 2,
-      },
-      shadowOpacity: 0.2,
-      shadowRadius: 3.84,
-      elevation: 5,
-    },
-    currentLocationContainer: {
-      flex: 1,
-      padding: 8,
-    },
-    locationTitle: {
-      fontSize: 16,
-      fontWeight: '600',
-      marginBottom: 4,
-    },
-    locationName: {
-      fontSize: 14,
-      fontWeight: '500',
-    },
-    locationPickerButton: {
-      position: 'absolute',
-      top: 10,
-      right: 60, // ThemeToggle'dan 50 + 10 pixel uzakta
-      width: 40,
-      height: 40,
-      borderRadius: 20,
-      backgroundColor: "#FF9500", // Turuncu renk
-      justifyContent: 'center',
-      alignItems: 'center',
-      shadowColor: "#000",
-      shadowOffset: {
-        width: 0,
-        height: 2,
-      },
-      shadowOpacity: 0.2,
-      shadowRadius: 3.84,
-      elevation: 5,
-      zIndex: 1,
-    },
-    modalSafeArea: {
-      flex: 1,
-      backgroundColor: isDarkMode ? 'rgba(0,0,0,0.95)' : 'rgba(255,255,255,0.95)',
-    },
-    locationModalContainer: {
-      flex: 1,
-      paddingHorizontal: 20,
-      paddingTop: 60,
-      paddingBottom: 20,
-    },
-    locationModalTitle: {
-      fontSize: 24,
-      fontWeight: 'bold',
-      color: '#FF9500',
-      textAlign: 'center',
-      marginBottom: 20,
-    },
-    locationItem: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      padding: 16,
-      backgroundColor: '#2C2C2E',
-      borderRadius: 12,
-      marginBottom: 12,
-    },
-    locationItemText: {
-      fontSize: 16,
-      fontWeight: '500',
-      color: '#FFFFFF',
-    },
-    closeButton: {
-      backgroundColor: '#FF9500',
-      padding: 16,
-      borderRadius: 12,
-      alignItems: 'center',
-      marginTop: 'auto',
-    },
-  });
+  const dynamicStyles = createDynamicStyles(isDarkMode);
 
   return (
     <SafeAreaView style={[styles.safeArea, dynamicStyles.safeArea]}>
@@ -1149,10 +769,10 @@ const saveLocation = async () => {
           </TouchableOpacity>
           
 
-        <WarningModal />             
+       
       </View>
     </SafeAreaView>
   );
 };
 
-export default HomeScreen; 
+export default HomeScreen;
