@@ -7,7 +7,12 @@ import NetInfo from "@react-native-community/netinfo";
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createDynamicStyles, styles } from '../src/styles/HomeScreen.styles';
-import { initialItems, categorizedItems, categoryIcons } from '../src/data/items';
+import { 
+  getCategorizedItems, 
+  getInitialItems, 
+  categoryIcons,
+  getCategories 
+} from '../src/data/items';
 import strings from '../src/localization/strings';
 // 1. Sabit değişkenleri en üste ekle
 const EARTH_RADIUS = 6371e3; // Dünya yarıçapı (metre)
@@ -19,7 +24,7 @@ const STORAGE_KEYS = {
 const HomeScreen = () => {
   
 
-  const [items, setItems] = useState(initialItems);
+  const [items, setItems] = useState(() => getInitialItems(currentLanguage));
   const [selectedItems, setSelectedItems] = useState([]);
   const [homeLocation, setHomeLocation] = useState(null);
   const [locationSubscription, setLocationSubscription] = useState(null);
@@ -494,8 +499,14 @@ const saveLocation = async () => {
   };
   
 
-  // CategorySelector bileşenini güncelle
-  const CategorySelector = () => (
+
+// CategorySelector bileşenini güncelle
+const CategorySelector = () => {
+  const categories = getCategories(currentLanguage);
+  const items = getCategorizedItems(currentLanguage);
+  const allCategoryName = strings[currentLanguage].categories.all;
+
+  return (
     <View style={styles.categoryWrapper}>
       <ScrollView 
         horizontal 
@@ -506,19 +517,20 @@ const saveLocation = async () => {
           style={[
             styles.categoryButton,
             dynamicStyles.categoryButton,
-            selectedCategory === 'Tümü' && dynamicStyles.selectedCategory
+            selectedCategory === allCategoryName && dynamicStyles.selectedCategory
           ]}
-          onPress={() => setSelectedCategory('Tümü')}
+          onPress={() => setSelectedCategory(allCategoryName)}
         >
           <Text style={[
             styles.categoryButtonText,
             dynamicStyles.categoryText,
-            selectedCategory === 'Tümü' && styles.selectedCategoryText
+            selectedCategory === allCategoryName && styles.selectedCategoryText
           ]}>
-            {categoryIcons['Tümü']} Tümü
+            {categoryIcons[currentLanguage === 'tr' ? 'Tümü' : 'All']} {allCategoryName}
           </Text>
         </TouchableOpacity>
-        {Object.keys(categorizedItems).map(category => (
+
+        {categories.map(category => (
           <TouchableOpacity
             key={category}
             style={[
@@ -540,202 +552,197 @@ const saveLocation = async () => {
       </ScrollView>
     </View>
   );
+};
 
-  const getFilteredItems = () => {
-    if (selectedCategory === 'Tümü') {
-      return initialItems;
-    }
-    return categorizedItems[selectedCategory] || [];
-  };
+// getFilteredItems fonksiyonunu güncelle
+const getFilteredItems = () => {
+  const items = getCategorizedItems(currentLanguage);
+  const allCategoryName = strings[currentLanguage].categories.all;
+  
+  if (!selectedCategory || selectedCategory === allCategoryName) {
+    return getInitialItems(currentLanguage);
+  }
+  
+  return items[selectedCategory] || [];
+};
 
-  // StatsCard bileşenini güncelle
-  const StatsCard = () => (
-    <View style={[styles.statsCard, dynamicStyles.statsCard]}>
-      <View style={styles.statItem}>
-        <Text style={[styles.statNumber, dynamicStyles.text]}>
-          {selectedItems.length}
-        </Text>
-        <Text style={[styles.statLabel, dynamicStyles.categoryText]}>
-          Seçili
-        </Text>
-      </View>
-      <View style={styles.statDivider} />
-      <View style={styles.statItem}>
-        <Text style={[styles.statNumber, dynamicStyles.text]}>
-          {getFilteredItems().length}
-        </Text>
-        <Text style={[styles.statLabel, dynamicStyles.categoryText]}>
-          Toplam
-        </Text>
-      </View>
+// useEffect'i güncelle
+useEffect(() => {
+  setItems(getInitialItems(currentLanguage));
+  // Kategoriyi de sıfırla
+  setSelectedCategory(strings[currentLanguage].categories.all);
+}, [currentLanguage]);
+
+const StatsCard = () => (
+  <View style={[styles.statsCard, dynamicStyles.statsCard]}>
+    <View style={styles.statItem}>
+      <Text style={[styles.statNumber, dynamicStyles.text]}>
+        {selectedItems.length}
+      </Text>
+      <Text style={[styles.statLabel, dynamicStyles.categoryText]}>
+        {strings[currentLanguage].stats.selected}
+      </Text>
     </View>
-  );
-  const CurrentLocationCard = () => {
-    const [isVisible, setIsVisible] = useState(false);
-  
-    return (
-      <>
-        <TouchableOpacity 
-          style={[styles.statsCard, dynamicStyles.statsCard]}
-          onPress={() => setIsVisible(true)}
-        >
-          <View style={styles.currentLocationContainer}>
-            <Text style={[styles.locationTitle, dynamicStyles.text]}>
-              📍 Seçili Konum
-            </Text>
-            <Text style={[styles.locationName, dynamicStyles.categoryText]}>
-              {homeLocation?.name || 'Henüz konum seçilmedi'}
-            </Text>
-          </View>
-        </TouchableOpacity>
-  
-        <Modal
-          visible={isVisible}
-          animationType="slide"
-          transparent={true}
-        >
-          <SafeAreaView style={[styles.modalSafeArea, dynamicStyles.modalBackground]}>
-            <View style={[styles.locationModalContainer, dynamicStyles.modalContent]}>
-              <Text style={styles.locationModalTitle}>
-                📍 Kayıtlı Konumlar
-              </Text>
-              
-              <FlatList
-                data={savedLocations}
-                keyExtractor={(item) => item.id}
-                renderItem={({ item }) => (
-                  <TouchableOpacity
-                    style={[styles.locationItem, dynamicStyles.locationItem, { 
-                      backgroundColor: homeLocation?.id === item.id ? '#34C759' : dynamicStyles.locationItem.backgroundColor 
-                    }]}
-                    onPress={() => {
-                      setHomeLocation(item);
-                      setIsVisible(false);
-                    }}
-                  >
-                    <Text style={[styles.locationItemText, dynamicStyles.locationItemText, { 
-                      color: homeLocation?.id === item.id ? '#FFF' : dynamicStyles.locationItemText.color 
-                    }]}>
-                      {item.name}
-                    </Text>
-                  </TouchableOpacity>
-                )}
-              />
-  
-              <TouchableOpacity 
-                style={styles.closeButton}
-                onPress={() => setIsVisible(false)}
-              >
-                <Text style={styles.buttonText}>Kapat</Text>
-              </TouchableOpacity>
-            </View>
-          </SafeAreaView>
-        </Modal>
-      </>
-    );
-  };
-  
-  // ThemeToggle bileşenini güncelle
-  const ThemeToggle = () => (
-    <TouchableOpacity
-      style={[styles.themeToggleButton]} // homeButton yerine yeni stil
-      onPress={() => setIsDarkMode(!isDarkMode)}
-    >
-      <Text style={styles.buttonModeText}>
-        {isDarkMode ? '☀️' : '🌙'}
-        
+    <View style={styles.statDivider} />
+    <View style={styles.statItem}>
+      <Text style={[styles.statNumber, dynamicStyles.text]}>
+        {getFilteredItems().length}
       </Text>
-    </TouchableOpacity>
-  );
-
-  const LanguageToggle = () => (
-    <TouchableOpacity
-      style={[styles.themeToggleButton]}
-      onPress={toggleLanguage}
-    >
-      <Text style={styles.buttonModeText}>
-        {currentLanguage === 'tr' ? '🇬🇧' : '🇹🇷'}
+      <Text style={[styles.statLabel, dynamicStyles.categoryText]}>
+        {strings[currentLanguage].stats.total}
       </Text>
-    </TouchableOpacity>
-  );
+    </View>
+  </View>
+);
 
-  const dynamicStyles = createDynamicStyles(isDarkMode);
+const CurrentLocationCard = () => {
+  const [isVisible, setIsVisible] = useState(false);
 
   return (
-    <SafeAreaView style={[styles.safeArea, dynamicStyles.safeArea]}>
-      <View style={[styles.container, dynamicStyles.container]}>
-        <StatusBar barStyle={isDarkMode ? "light-content" : "dark-content"} />
-        <Text style={[styles.title, dynamicStyles.text]}>
-          {strings[currentLanguage].appName}
-        </Text>
-        
-        <View style={styles.toggleContainer}>
-          <ThemeToggle />
-          <LanguageToggle />
+    <>
+      <TouchableOpacity 
+        style={[styles.statsCard, dynamicStyles.statsCard]}
+        onPress={() => setIsVisible(true)}
+      >
+        <View style={styles.currentLocationContainer}>
+          <Text style={[styles.locationTitle, dynamicStyles.text]}>
+            {strings[currentLanguage].location.title}
+          </Text>
+          <Text style={[styles.locationName, dynamicStyles.categoryText]}>
+            {homeLocation?.name || strings[currentLanguage].location.noLocation}
+          </Text>
         </View>
-        
-        <CategorySelector />
+      </TouchableOpacity>
 
-        <StatsCard />
-        <CurrentLocationCard />
+      <Modal
+        visible={isVisible}
+        animationType="slide"
+        transparent={true}
+      >
+        <SafeAreaView style={[styles.modalSafeArea, dynamicStyles.modalBackground]}>
+          <View style={[styles.locationModalContainer, dynamicStyles.modalContent]}>
+            <Text style={styles.locationModalTitle}>
+              {strings[currentLanguage].location.savedLocations}
+            </Text>
+            
+            {/* ...FlatList... */}
 
-        <FlatList
-          data={getFilteredItems()}
-          renderItem={({ item }) => (
-            <TouchableOpacity
-              style={[
-                styles.itemContainer,
-                dynamicStyles.itemContainer,
-                selectedItems.includes(item) && dynamicStyles.selectedItem, // styles.selectedItem yerine dynamicStyles.selectedItem kullanıyoruz
-              ]}
-              onPress={() =>
-                setSelectedItems(prev =>
-                  prev.includes(item) ? prev.filter(i => i !== item) : [...prev, item]
-                )
-              }
+            <TouchableOpacity 
+              style={styles.closeButton}
+              onPress={() => setIsVisible(false)}
             >
-              <Text style={[
-                styles.itemText, 
-                dynamicStyles.text,
-                selectedItems.includes(item) && dynamicStyles.selectedItemText // Seçili durum için metin stili
-              ]}>
-                {item}
+              <Text style={styles.buttonText}>
+                {strings[currentLanguage].buttons.close}
               </Text>
-              {selectedItems.includes(item) && (
-                <Text style={styles.checkIcon}>✔️</Text>
-              )}
             </TouchableOpacity>
-          )}
-          keyExtractor={(item, index) => item + index.toString()}
-        />
-        
-        {isLoading && ( // Yükleme göstergesi
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color="#007AFF" />
           </View>
-        )}
-        <View style={styles.bottomButtonsContainer}>
-          <TouchableOpacity 
-            style={[styles.homeButton, { backgroundColor: '#34C759' }]} 
-            onPress={saveHomeLocation}
-          > 
-            <Text style={styles.buttonText}>
-              {strings[currentLanguage].buttons.saveLocation}
-            </Text>
-          </TouchableOpacity>
-        
-          <TouchableOpacity 
-            style={[styles.homeButton, { backgroundColor: '#007AFF' }]} 
-            onPress={simulateLocationChange}
-          >
-            <Text style={styles.buttonText}>
-              {strings[currentLanguage].buttons.testLocation}
-            </Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-    </SafeAreaView>
+        </SafeAreaView>
+      </Modal>
+    </>
   );
+};
+
+// ThemeToggle bileşenini güncelle
+const ThemeToggle = () => (
+  <TouchableOpacity
+    style={[styles.themeToggleButton]} // homeButton yerine yeni stil
+    onPress={() => setIsDarkMode(!isDarkMode)}
+  >
+    <Text style={styles.buttonModeText}>
+      {isDarkMode ? '☀️' : '🌙'}
+      
+    </Text>
+  </TouchableOpacity>
+);
+
+const LanguageToggle = () => (
+  <TouchableOpacity
+    style={[styles.themeToggleButton]}
+    onPress={toggleLanguage}
+  >
+    <Text style={styles.buttonModeText}>
+      {currentLanguage === 'tr' ? '🇬🇧' : '🇹🇷'}
+    </Text>
+  </TouchableOpacity>
+);
+
+const dynamicStyles = createDynamicStyles(isDarkMode);
+
+return (
+  <SafeAreaView style={[styles.safeArea, dynamicStyles.safeArea]}>
+    <View style={[styles.container, dynamicStyles.container]}>
+      <StatusBar barStyle={isDarkMode ? "light-content" : "dark-content"} />
+      <Text style={[styles.title, dynamicStyles.text]}>
+        {strings[currentLanguage].appName}
+      </Text>
+      
+      <View style={styles.toggleContainer}>
+        <ThemeToggle />
+        <LanguageToggle />
+      </View>
+      
+      <CategorySelector />
+
+      <StatsCard />
+      <CurrentLocationCard />
+
+      <FlatList
+        data={getFilteredItems()}
+        renderItem={({ item }) => (
+          <TouchableOpacity
+            style={[
+              styles.itemContainer,
+              dynamicStyles.itemContainer,
+              selectedItems.includes(item) && dynamicStyles.selectedItem, // styles.selectedItem yerine dynamicStyles.selectedItem kullanıyoruz
+            ]}
+            onPress={() =>
+              setSelectedItems(prev =>
+                prev.includes(item) ? prev.filter(i => i !== item) : [...prev, item]
+              )
+            }
+          >
+            <Text style={[
+              styles.itemText, 
+              dynamicStyles.text,
+              selectedItems.includes(item) && dynamicStyles.selectedItemText // Seçili durum için metin stili
+            ]}>
+              {item}
+            </Text>
+            {selectedItems.includes(item) && (
+              <Text style={styles.checkIcon}>✔️</Text>
+            )}
+          </TouchableOpacity>
+        )}
+        keyExtractor={(item, index) => item + index.toString()}
+      />
+      
+      {isLoading && ( // Yükleme göstergesi
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#007AFF" />
+        </View>
+      )}
+      <View style={styles.bottomButtonsContainer}>
+        <TouchableOpacity 
+          style={[styles.homeButton, { backgroundColor: '#34C759' }]} 
+          onPress={saveHomeLocation}
+        > 
+          <Text style={styles.buttonText}>
+            {strings[currentLanguage].buttons.saveLocation}
+          </Text>
+        </TouchableOpacity>
+      
+        <TouchableOpacity 
+          style={[styles.homeButton, { backgroundColor: '#007AFF' }]} 
+          onPress={simulateLocationChange}
+        >
+          <Text style={styles.buttonText}>
+            {strings[currentLanguage].buttons.testLocation}
+          </Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  </SafeAreaView>
+);
 };
 
 export default HomeScreen;
