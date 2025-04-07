@@ -21,6 +21,9 @@ const STORAGE_KEYS = {
   HOME_LOCATION: '@home_location'
 };
 
+// Global bildirim dinleyicisini tanımla
+let notificationListener = null;
+
 const HomeScreen = () => {
   
 
@@ -131,6 +134,52 @@ const HomeScreen = () => {
     
     setupNotifications();
   }, []);
+
+  // Bildirim ayarlarını useEffect içinde güncelle
+  useEffect(() => {
+    const setupNotifications = async () => {
+      const { status } = await Notifications.requestPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert(
+          strings[currentLanguage].errors.permission,
+          strings[currentLanguage].errors.notification
+        );
+        return;
+      }
+  
+      await Notifications.setNotificationHandler({
+        handleNotification: async () => ({
+          shouldShowAlert: true,
+          shouldPlaySound: true,
+          shouldSetBadge: false,
+          priority: 'high',
+          categoryIdentifier: 'items'
+        }),
+      });
+  
+      // Bildirim butonlarını dile göre güncelle
+      await Notifications.setNotificationCategoryAsync('items', [
+        {
+          identifier: 'yes',
+          buttonTitle: currentLanguage === 'tr' ? '✅ Evet, Aldım' : '✅ Yes, I Have Them',
+          options: {
+            isDestructive: false,
+            isAuthenticationRequired: false,
+          }
+        },
+        {
+          identifier: 'no',
+          buttonTitle: currentLanguage === 'tr' ? '❌ Hayır, Unuttum' : '❌ No, I Forgot',
+          options: {
+            isDestructive: true,
+            isAuthenticationRequired: false,
+          }
+        }
+      ]);
+    };
+    
+    setupNotifications();
+  }, [currentLanguage]); // currentLanguage değiştiğinde yeniden çalıştır
 
   useEffect(() => {
     return () => {
@@ -326,7 +375,7 @@ const saveLocation = async () => {
     const φ1 = (lat1 * Math.PI) / 180;
     const φ2 = (lat2 * Math.PI) / 180;
     const Δφ = ((lat2 - lat1) * Math.PI) / 180;
-    const Δλ = ((lon2 - lon1) * Math.PI) / 180; // Burası düzeltildi
+    const Δλ = ((lon1 - lon1) * Math.PI) / 180; // Burası düzeltildi
   
     const a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
              Math.cos(φ1) * Math.cos(φ2) * 
@@ -341,19 +390,22 @@ const saveLocation = async () => {
     try {
       const { status } = await Notifications.getPermissionsAsync();
       if (status !== 'granted') {
-        Alert.alert("İzin Hatası", "Bildirim göndermek için izin gerekiyor");
+        Alert.alert(
+          strings[currentLanguage].errors.permission,
+          strings[currentLanguage].errors.notification
+        );
         return;
       }
   
       // Seçili eşyaları kontrol et ve formatlı metin oluştur
       const itemsList = selectedItems.length > 0 
-        ? selectedItems.map(item => item.split(' ')[1]).join(', ') // Emoji'leri kaldır
-        : 'Hiç eşya seçmedin!';
+        ? selectedItems.map(item => item.split(' ')[1]).join(', ')
+        : strings[currentLanguage].alerts.noItems;
   
       const notificationContent = {
-        title: "📝 Eşyalarını Aldın mı?",
+        title: strings[currentLanguage].alerts.checkItems,
         body: selectedItems.length > 0 
-          ? `Unutma! Yanında olması gerekenler: ${itemsList}`
+          ? `${strings[currentLanguage].alerts.rememberItems}: ${itemsList}`
           : itemsList,
         sound: 'default',
         priority: 'high',
@@ -362,72 +414,44 @@ const saveLocation = async () => {
   
       await Notifications.scheduleNotificationAsync({
         content: notificationContent,
-        trigger: null // Hemen gönder
+        trigger: null
       });
-  
-      console.log('Bildirim gönderildi:', notificationContent);
   
     } catch (error) {
       console.error('Bildirim hatası:', error);
-      Alert.alert("Bildirim Hatası", "Bildirim gönderilemedi: " + error.message);
+      Alert.alert(
+        strings[currentLanguage].errors.notification,
+        error.message
+      );
     }
   };
 
   const sendAlert = async () => {
     try {
-      // Titreşim paterni
       Vibration.vibrate([500, 200, 500]);
       
+      // Güncel dil durumunu saklayalım
+      const currentLang = currentLanguage;
       const itemsList = selectedItems.length > 0 
         ? `${selectedItems.join('\n• ')}` 
-        : 'Hiç eşya seçmedin!';
-
-      // Bildirimi gönder
+        : strings[currentLang].alerts.noItems;
+  
+      // Sadece bir bildirim gönder
       await Notifications.scheduleNotificationAsync({
         content: {
-          title: "⚠️ Dikkat! Evden Uzaklaşıyorsun!",
-          body: `Seçili Eşyaların:\n• ${itemsList}`,
+          title: strings[currentLang].alerts.warning,
+          body: `${strings[currentLang].alerts.items}\n• ${itemsList}`,
           sound: 'default',
           priority: 'high',
-          badge: selectedItems.length,
-          categoryIdentifier: 'items', // Kategori tanımlayıcısını ekleyin
-          data: { type: 'reminder' }
+          categoryIdentifier: 'items',
+          data: { 
+            type: 'reminder',
+            language: currentLang // Dil bilgisini data içinde saklayalım
+          }
         },
         trigger: null
       });
-
-      // Bildirim yanıtlarını dinle
-      const subscription = Notifications.addNotificationResponseReceivedListener(response => {
-        const { actionIdentifier } = response;
-        
-        if (actionIdentifier === 'yes') {
-          // Evet'e tıklandığında
-          Notifications.scheduleNotificationAsync({
-            content: {
-              title: "✅ Harika! İyi yolculuklar!",
-              body: "Tüm eşyalarını aldığını onayladın.",
-              sound: 'default'
-            },
-            trigger: null
-          });
-        } else if (actionIdentifier === 'no') {
-          // Hayır'a tıklandığında
-          Vibration.vibrate([1000, 500, 1000]);
-          Notifications.scheduleNotificationAsync({
-            content: {
-              title: "🚨 Acil! Eşyalarını Unutuyorsun!",
-              body: `Lütfen geri dön ve şunları al:\n• ${itemsList}`,
-              sound: 'default',
-              priority: 'high'
-            },
-            trigger: null
-          });
-        }
-      });
-
-      // Temizlik fonksiyonu
-      return () => subscription.remove();
-
+  
     } catch (error) {
       console.error('Uyarı hatası:', error);
     }
@@ -435,11 +459,11 @@ const saveLocation = async () => {
 
   const checkDistance = (distance) => {
     if (distance >= 50 && distance < 100) {
-      sendAlert("İlk Uyarı: Evden uzaklaşıyorsun!");
+      sendAlert(strings[currentLanguage].alerts.firstWarning);
     } else if (distance >= 100 && distance < 200) {
-      sendAlert("Son Uyarı: Eşyalarını kontrol et!");
+      sendAlert(strings[currentLanguage].alerts.lastWarning);
     } else if (distance >= 200) {
-      sendAlert("Kritik Uyarı: Çok uzaklaştın!");
+      sendAlert(strings[currentLanguage].alerts.criticalWarning);
     }
   };
   // HomeScreen.jsx içine yeni fonksiyon ekleyin
@@ -667,6 +691,76 @@ const LanguageToggle = () => (
 );
 
 const dynamicStyles = createDynamicStyles(isDarkMode);
+
+// Global değişken olarak bildirim durumunu takip edelim
+let isNotificationActive = false;
+
+// Global notification manager'ı güncelle
+const notificationManager = {
+  isProcessing: false,
+  lastNotificationTime: 0,
+  cooldownPeriod: 2000, // 2 saniye bekleme süresi
+
+  async send(config) {
+    const now = Date.now();
+    
+    // Eğer işlem devam ediyorsa veya cooldown süresi dolmadıysa çık
+    if (this.isProcessing || (now - this.lastNotificationTime) < this.cooldownPeriod) {
+      console.log('Bildirim engellendi: İşlem devam ediyor veya cooldown süresi dolmadı');
+      return;
+    }
+    
+    try {
+      this.isProcessing = true;
+      this.lastNotificationTime = now;
+      
+      await Notifications.scheduleNotificationAsync(config);
+      // Bildirimin işlenmesi için biraz bekleyelim
+      await new Promise(resolve => setTimeout(resolve, 1000));
+    } catch (error) {
+      console.error('Bildirim hatası:', error);
+    } finally {
+      this.isProcessing = false;
+    }
+  }
+};
+
+// useEffect içindeki bildirim dinleyicisini güncelle - diğer useEffect'i kaldır
+useEffect(() => {
+  const subscription = Notifications.addNotificationResponseReceivedListener(async (response) => {
+    const { actionIdentifier, notification } = response;
+    const notificationLang = notification.request.content.data?.language || currentLanguage;
+    const itemsList = selectedItems.length > 0 
+      ? `${selectedItems.join('\n• ')}` 
+      : strings[notificationLang].alerts.noItems;
+
+    if (actionIdentifier === 'yes') {
+      await notificationManager.send({
+        content: {
+          title: strings[notificationLang].alerts.confirm,
+          body: strings[notificationLang].alerts.itemsConfirmed,
+          sound: 'default',
+          data: { language: notificationLang }
+        },
+        trigger: null
+      });
+    } else if (actionIdentifier === 'no') {
+      Vibration.vibrate([1000, 500, 1000]);
+      await notificationManager.send({
+        content: {
+          title: strings[notificationLang].alerts.forgot,
+          body: `${strings[notificationLang].alerts.goBack}\n• ${itemsList}`,
+          sound: 'default',
+          priority: 'high',
+          data: { language: notificationLang }
+        },
+        trigger: null
+      });
+    }
+  });
+
+  return () => subscription.remove();
+}, []); // Sadece component mount olduğunda çalışsın
 
 return (
   <SafeAreaView style={[styles.safeArea, dynamicStyles.safeArea]}>
