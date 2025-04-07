@@ -81,6 +81,17 @@ export const createDynamicStyles = (isDarkMode) => ({
   },
   modalBackground: {
     backgroundColor: isDarkMode ? colors.dark.modalBackground : colors.light.modalBackground
+  },
+  languageButton: {
+    backgroundColor: isDarkMode ? colors.dark.surface : colors.light.surface,
+    padding: 10,
+    borderRadius: 8,
+    minWidth: 120,
+    alignItems: 'center'
+  },
+  languageButtonText: {
+    color: isDarkMode ? colors.dark.text : colors.light.text,
+    fontSize: 16
   }
 });
 
@@ -446,12 +457,42 @@ export const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.1)',
     justifyContent: 'center',
     alignItems: 'center',
-    marginLeft: 8, // Sol boşluk ekle
+    position: 'absolute',
+    top: 10, // Başlık yazısının altına gelecek şekilde
+    right: 10, // Sağ üst köşe
+    
+    zIndex: 1,
   },
-  
   buttonModeText: {
     fontSize: 20,
   },
+  settingsModalContainer: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    padding: 20,
+    width: '90%',
+    maxHeight: '80%',
+    alignSelf: 'center',
+    marginTop: '20%',
+  },
+  settingsTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+  settingRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E5EA',
+  },
+  settingLabel: {
+    fontSize: 16,
+    flex: 1,
+  }
 });
 
 export default {

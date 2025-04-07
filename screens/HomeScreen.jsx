@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useColorScheme } from "react";
-import { View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet, Alert, Vibration, Modal, ScrollView, StatusBar, ActivityIndicator } from "react-native";
+import { View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet, Alert, Vibration, Modal, ScrollView, StatusBar, ActivityIndicator,Switch } from "react-native";
 import CheckBox from '@react-native-community/checkbox';
 import * as Location from 'expo-location';
 import * as Notifications from 'expo-notifications';
@@ -7,13 +7,9 @@ import NetInfo from "@react-native-community/netinfo";
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createDynamicStyles, styles } from '../src/styles/HomeScreen.styles';
-import { 
-  getCategorizedItems, 
-  getInitialItems, 
-  categoryIcons,
-  getCategories 
-} from '../src/data/items';
+import {  getCategorizedItems,  getInitialItems, categoryIcons,getCategories } from '../src/data/items';
 import strings from '../src/localization/strings';
+
 // 1. Sabit değişkenleri en üste ekle
 const EARTH_RADIUS = 6371e3; // Dünya yarıçapı (metre)
 const STORAGE_KEYS = {
@@ -36,10 +32,11 @@ const HomeScreen = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('Tümü');
   const [isLoading, setIsLoading] = useState(false); // Yükleme durumu için state ekleyin
-  const [isDarkMode, setIsDarkMode] = useState(true);
+  const [isDarkMode, setIsDarkMode] = useState(false); // isDarkMode state'ini ekleyelim
   const [savedLocations, setSavedLocations] = useState([]);
   const [locationName, setLocationName] = useState('');
   const [currentLanguage, setCurrentLanguage] = useState('tr');
+  const [showSettings, setShowSettings] = useState(false);
 
   // Dil değiştirme fonksiyonunu ekleyelim
   const toggleLanguage = async () => {
@@ -762,24 +759,85 @@ useEffect(() => {
   return () => subscription.remove();
 }, []); // Sadece component mount olduğunda çalışsın
 
+// Ayarlar modalı için render
+const renderSettings = () => (
+  <Modal
+    visible={showSettings}
+    animationType="slide"
+    transparent={true}
+    onRequestClose={() => setShowSettings(false)}
+  >
+    <SafeAreaView style={[styles.modalSafeArea, dynamicStyles.modalBackground]}>
+      <View style={[styles.settingsModalContainer, dynamicStyles.modalContent]}>
+        <Text style={[styles.modalTitle, dynamicStyles.text]}>
+          {strings[currentLanguage].settings.title}
+        </Text>
+
+        {/* Tema Ayarı */}
+        <View style={styles.settingRow}>
+          <Text style={[styles.settingLabel, dynamicStyles.text]}>
+            {strings[currentLanguage].settings.darkMode}
+          </Text>
+          <Switch
+            value={isDarkMode}
+            onValueChange={setIsDarkMode}
+            trackColor={{ false: '#767577', true: '#81b0ff' }}
+            thumbColor={isDarkMode ? '#007AFF' : '#f4f3f4'}
+          />
+        </View>
+
+        {/* Dil Ayarı */}
+        <View style={styles.settingRow}>
+          <Text style={[styles.settingLabel, dynamicStyles.text]}>
+            {strings[currentLanguage].settings.language}
+          </Text>
+          {/* Dinamik stil eklendi */}
+          <TouchableOpacity
+            style={[styles.languageButton, dynamicStyles.languageButton]}
+            onPress={toggleLanguage}
+          >
+            <Text style={[styles.languageButtonText, dynamicStyles.text]}>
+              {currentLanguage === 'tr' ? '🇹🇷 Türkçe' : '🇬🇧 English'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        <TouchableOpacity 
+          style={[styles.closeButton, { marginTop: 20 }]}
+          onPress={() => setShowSettings(false)}
+        >
+          <Text style={styles.buttonText}>
+            {strings[currentLanguage].buttons.close}
+          </Text>
+        </TouchableOpacity>
+      </View>
+    </SafeAreaView>
+  </Modal>
+);
+
 return (
   <SafeAreaView style={[styles.safeArea, dynamicStyles.safeArea]}>
     <View style={[styles.container, dynamicStyles.container]}>
       <StatusBar barStyle={isDarkMode ? "light-content" : "dark-content"} />
+      
+      {/* Üst kısımdaki ayarlar butonu */}
+      <View style={styles.toggleContainer}>
+        <TouchableOpacity
+          style={[styles.themeToggleButton]}
+          onPress={() => setShowSettings(true)}
+        >
+          <Text style={styles.buttonModeText}>⚙️</Text>
+        </TouchableOpacity>
+      </View>
+
       <Text style={[styles.title, dynamicStyles.text]}>
         {strings[currentLanguage].appName}
       </Text>
       
-      <View style={styles.toggleContainer}>
-        <ThemeToggle />
-        <LanguageToggle />
-      </View>
-      
       <CategorySelector />
-
       <StatsCard />
       <CurrentLocationCard />
-
+      
       <FlatList
         data={getFilteredItems()}
         renderItem={({ item }) => (
@@ -834,6 +892,8 @@ return (
           </Text>
         </TouchableOpacity>
       </View>
+
+      {renderSettings()}
     </View>
   </SafeAreaView>
 );

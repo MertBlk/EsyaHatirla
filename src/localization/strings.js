@@ -43,6 +43,11 @@ const strings = {
         location: 'Konum kaydedilemedi',
         permission: 'Konum izni verilmedi',
         network: 'İnternet bağlantısı gerekli'
+      },
+      settings: {
+        title: 'Ayarlar',
+        darkMode: 'Karanlık Mod',
+        language: 'Dil'
       }
     },
     en: {
@@ -89,6 +94,11 @@ const strings = {
         location: 'Could not save location',
         permission: 'Location permission denied',
         network: 'Internet connection required'
+      },
+      settings: {
+        title: 'Settings',
+        darkMode: 'Dark Mode',
+        language: 'Language'
       }
     }
   };
