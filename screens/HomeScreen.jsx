@@ -8,6 +8,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createDynamicStyles, styles } from '../src/styles/HomeScreen.styles';
 import { initialItems, categorizedItems, categoryIcons } from '../src/data/items';
+import strings from '../src/localization/strings';
 // 1. Sabit değişkenleri en üste ekle
 const EARTH_RADIUS = 6371e3; // Dünya yarıçapı (metre)
 const STORAGE_KEYS = {
@@ -30,8 +31,37 @@ const HomeScreen = () => {
   const [isDarkMode, setIsDarkMode] = useState(true);
   const [savedLocations, setSavedLocations] = useState([]);
   const [locationName, setLocationName] = useState('');
+  const [currentLanguage, setCurrentLanguage] = useState('tr');
 
-  
+  // Dil değiştirme fonksiyonunu ekleyelim
+  const toggleLanguage = async () => {
+    try {
+      const newLang = currentLanguage === 'tr' ? 'en' : 'tr';
+      setCurrentLanguage(newLang);
+      
+      // Dil tercihini AsyncStorage'a kaydet
+      await AsyncStorage.setItem('user-language', newLang);
+      
+      console.log('Dil değiştirildi:', newLang);
+    } catch (error) {
+      console.error('Dil değiştirme hatası:', error);
+    }
+  };
+
+  // Uygulama başladığında kaydedilmiş dil tercihini yükle
+  useEffect(() => {
+    const loadLanguage = async () => {
+      try {
+        const savedLanguage = await AsyncStorage.getItem('user-language');
+        if (savedLanguage) {
+          setCurrentLanguage(savedLanguage);
+        }
+      } catch (error) {
+        console.error('Dil yükleme hatası:', error);
+      }
+    };
+    loadLanguage();
+  }, []);
 
   const theme = {
     dark: {
@@ -618,17 +648,31 @@ const saveLocation = async () => {
     </TouchableOpacity>
   );
 
+  const LanguageToggle = () => (
+    <TouchableOpacity
+      style={[styles.themeToggleButton]}
+      onPress={toggleLanguage}
+    >
+      <Text style={styles.buttonModeText}>
+        {currentLanguage === 'tr' ? '🇬🇧' : '🇹🇷'}
+      </Text>
+    </TouchableOpacity>
+  );
+
   const dynamicStyles = createDynamicStyles(isDarkMode);
 
   return (
     <SafeAreaView style={[styles.safeArea, dynamicStyles.safeArea]}>
       <View style={[styles.container, dynamicStyles.container]}>
-      <StatusBar barStyle={isDarkMode ? "light-content" : "dark-content"} />
-      <Text style={[styles.title, dynamicStyles.text]}>
-        Unutma! Yanına al
-      </Text>
+        <StatusBar barStyle={isDarkMode ? "light-content" : "dark-content"} />
+        <Text style={[styles.title, dynamicStyles.text]}>
+          {strings[currentLanguage].appName}
+        </Text>
         
-        <ThemeToggle /> {/* Tema değiştirme butonu */}
+        <View style={styles.toggleContainer}>
+          <ThemeToggle />
+          <LanguageToggle />
+        </View>
         
         <CategorySelector />
 
@@ -670,19 +714,25 @@ const saveLocation = async () => {
             <ActivityIndicator size="large" color="#007AFF" />
           </View>
         )}
-        <TouchableOpacity style={styles.homeButton} onPress={saveHomeLocation}> 
-          <Text style={styles.buttonText}>🏠 Konumunu Kaydet</Text>
-        </TouchableOpacity>
-       
-        <TouchableOpacity 
+        <View style={styles.bottomButtonsContainer}>
+          <TouchableOpacity 
+            style={[styles.homeButton, { backgroundColor: '#34C759' }]} 
+            onPress={saveHomeLocation}
+          > 
+            <Text style={styles.buttonText}>
+              {strings[currentLanguage].buttons.saveLocation}
+            </Text>
+          </TouchableOpacity>
+        
+          <TouchableOpacity 
             style={[styles.homeButton, { backgroundColor: '#007AFF' }]} 
             onPress={simulateLocationChange}
           >
-            <Text style={styles.buttonText}>🔄 Konum Değişimini Test Et</Text>
+            <Text style={styles.buttonText}>
+              {strings[currentLanguage].buttons.testLocation}
+            </Text>
           </TouchableOpacity>
-          
-
-       
+        </View>
       </View>
     </SafeAreaView>
   );

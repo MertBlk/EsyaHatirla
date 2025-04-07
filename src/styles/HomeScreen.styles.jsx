@@ -430,6 +430,28 @@ export const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 'auto',
   },
+  toggleContainer: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    marginTop: 8,
+    marginBottom: 8,
+    gap: 8, // Butonlar arası boşluk
+  },
+  themeToggleButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(0,0,0,0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: 8, // Sol boşluk ekle
+  },
+  
+  buttonModeText: {
+    fontSize: 20,
+  },
 });
 
 export default {
