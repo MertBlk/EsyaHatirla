@@ -21,7 +21,7 @@ const colors = {
   common: {
     primary: '#007AFF',
     success: '#34C759',
-    warning: '#FF9500',
+    warning: 'red',
     error: '#FF3B30',
     shadow: '#000000'
   }
@@ -214,8 +214,10 @@ export const styles = StyleSheet.create({
   
   homeButton: { 
     backgroundColor: colors.common.success, 
+    textAlign: "center",  
     padding: 16,
     marginTop: 8,
+    
     marginBottom: 10, 
     borderRadius: 40,
     shadowColor: colors.common.shadow,
@@ -441,15 +443,7 @@ export const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 'auto',
   },
-  toggleContainer: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    marginTop: 8,
-    marginBottom: 8,
-    gap: 8, // Butonlar arası boşluk
-  },
+ 
   themeToggleButton: {
     width: 40,
     height: 40,
@@ -460,11 +454,22 @@ export const styles = StyleSheet.create({
     position: 'absolute',
     top: 10, // Başlık yazısının altına gelecek şekilde
     right: 10, // Sağ üst köşe
-    
     zIndex: 1,
   },
   buttonModeText: {
     fontSize: 20,
+  },
+  settingsButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(0,0,0,0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    position: 'absolute',
+    top: 0, // Başlık yazısının altına gelecek şekilde
+    right: 15, // Sağ üst köşe
+    zIndex: 1,
   },
   settingsModalContainer: {
     backgroundColor: '#FFFFFF',

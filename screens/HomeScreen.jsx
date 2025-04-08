@@ -85,10 +85,7 @@ const HomeScreen = () => {
     }
   };
   
-  useEffect(() => {
-    checkInternetConnection();
-    requestPermissions();
-  }, []);
+
 
   useEffect(() => {
     const setupNotifications = async () => {
@@ -205,13 +202,7 @@ const HomeScreen = () => {
   const homeLocationArray = {};
 
   // 📡 İnternet bağlantısını kontrol et
-  const checkInternetConnection = () => {
-    NetInfo.fetch().then(state => {
-      if (!state.isConnected) {
-        Alert.alert("Bağlantı Sorunu", "Lütfen internet bağlantınızı kontrol edin!");
-      }
-    });
-  };
+ 
 
   // 📍 Kullanıcının konum izinlerini isteme
   const requestPermissions = async () => {
@@ -646,7 +637,27 @@ const CurrentLocationCard = () => {
               {strings[currentLanguage].location.savedLocations}
             </Text>
             
-            {/* ...FlatList... */}
+            <FlatList
+                data={savedLocations}
+                keyExtractor={(item) => item.id}
+                renderItem={({ item }) => (
+                  <TouchableOpacity
+                    style={[styles.locationItem, dynamicStyles.locationItem, { 
+                      backgroundColor: homeLocation?.id === item.id ? '#34C759' : dynamicStyles.locationItem.backgroundColor 
+                    }]}
+                    onPress={() => {
+                      setHomeLocation(item);
+                      setIsVisible(false);
+                    }}
+                  >
+                    <Text style={[styles.locationItemText, dynamicStyles.locationItemText, { 
+                      color: homeLocation?.id === item.id ? '#FFF' : dynamicStyles.locationItemText.color 
+                    }]}>
+                      {item.name}
+                    </Text>
+                  </TouchableOpacity>
+                )}
+              />
 
             <TouchableOpacity 
               style={styles.closeButton}
@@ -801,6 +812,15 @@ const renderSettings = () => (
             </Text>
           </TouchableOpacity>
         </View>
+        <TouchableOpacity 
+          style={[styles.homeButton, { backgroundColor: '#007AFF' }]} 
+          onPress={simulateLocationChange}
+        >
+          <Text style={styles.buttonText}>
+            {strings[currentLanguage].buttons.testLocation}
+          </Text>
+        </TouchableOpacity>
+       
 
         <TouchableOpacity 
           style={[styles.closeButton, { marginTop: 20 }]}
@@ -823,7 +843,7 @@ return (
       {/* Üst kısımdaki ayarlar butonu */}
       <View style={styles.toggleContainer}>
         <TouchableOpacity
-          style={[styles.themeToggleButton]}
+          style={[styles.settingsButton]}
           onPress={() => setShowSettings(true)}
         >
           <Text style={styles.buttonModeText}>⚙️</Text>
@@ -883,14 +903,7 @@ return (
           </Text>
         </TouchableOpacity>
       
-        <TouchableOpacity 
-          style={[styles.homeButton, { backgroundColor: '#007AFF' }]} 
-          onPress={simulateLocationChange}
-        >
-          <Text style={styles.buttonText}>
-            {strings[currentLanguage].buttons.testLocation}
-          </Text>
-        </TouchableOpacity>
+        
       </View>
 
       {renderSettings()}

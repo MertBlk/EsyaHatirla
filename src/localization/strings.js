@@ -51,7 +51,7 @@ const strings = {
       }
     },
     en: {
-      appName: "Don't Forget! Take With You",
+      appName: "Don't Forget! ",
       categories: {
         all: 'All',
         daily: 'Daily',
