@@ -512,7 +512,30 @@ const saveLocation = async () => {
   
 
 
-// CategorySelector bileşenini güncelle
+// StatsCard bileşenini güncelleyelim
+const StatsCard = () => (
+  <View style={[styles.statsCard, dynamicStyles.statsCard]}>
+    <View style={styles.statItem}>
+      <Text style={[styles.statNumber, { color: '#007AFF' }]}>
+        {selectedItems.length}
+      </Text>
+      <Text style={[styles.statLabel, dynamicStyles.categoryText]}>
+        {strings[currentLanguage].stats.selected}
+      </Text>
+    </View>
+    <View style={styles.statDivider} />
+    <View style={styles.statItem}>
+      <Text style={[styles.statNumber, { color: isDarkMode ? '#64D2FF' : '#0A84FF' }]}>
+        {getFilteredItems().length}
+      </Text>
+      <Text style={[styles.statLabel, dynamicStyles.categoryText]}>
+        {strings[currentLanguage].stats.total}
+      </Text>
+    </View>
+  </View>
+);
+
+// Kategori seçici bileşenini de güncelleyelim
 const CategorySelector = () => {
   const categories = getCategories(currentLanguage);
   const items = getCategorizedItems(currentLanguage);
@@ -529,14 +552,14 @@ const CategorySelector = () => {
           style={[
             styles.categoryButton,
             dynamicStyles.categoryButton,
-            selectedCategory === allCategoryName && dynamicStyles.selectedCategory
+            selectedCategory === allCategoryName && styles.selectedCategoryButton
           ]}
           onPress={() => setSelectedCategory(allCategoryName)}
         >
           <Text style={[
             styles.categoryButtonText,
             dynamicStyles.categoryText,
-            selectedCategory === allCategoryName && styles.selectedCategoryText
+            selectedCategory === allCategoryName && { color: '#FFFFFF' }
           ]}>
             {categoryIcons[currentLanguage === 'tr' ? 'Tümü' : 'All']} {allCategoryName}
           </Text>
@@ -548,14 +571,14 @@ const CategorySelector = () => {
             style={[
               styles.categoryButton,
               dynamicStyles.categoryButton,
-              selectedCategory === category && dynamicStyles.selectedCategory
+              selectedCategory === category && styles.selectedCategoryButton
             ]}
             onPress={() => setSelectedCategory(category)}
           >
             <Text style={[
               styles.categoryButtonText,
               dynamicStyles.categoryText,
-              selectedCategory === category && styles.selectedCategoryText
+              selectedCategory === category && { color: '#FFFFFF' }
             ]}>
               {categoryIcons[category]} {category}
             </Text>
@@ -584,28 +607,6 @@ useEffect(() => {
   // Kategoriyi de sıfırla
   setSelectedCategory(strings[currentLanguage].categories.all);
 }, [currentLanguage]);
-
-const StatsCard = () => (
-  <View style={[styles.statsCard, dynamicStyles.statsCard]}>
-    <View style={styles.statItem}>
-      <Text style={[styles.statNumber, dynamicStyles.text]}>
-        {selectedItems.length}
-      </Text>
-      <Text style={[styles.statLabel, dynamicStyles.categoryText]}>
-        {strings[currentLanguage].stats.selected}
-      </Text>
-    </View>
-    <View style={styles.statDivider} />
-    <View style={styles.statItem}>
-      <Text style={[styles.statNumber, dynamicStyles.text]}>
-        {getFilteredItems().length}
-      </Text>
-      <Text style={[styles.statLabel, dynamicStyles.categoryText]}>
-        {strings[currentLanguage].stats.total}
-      </Text>
-    </View>
-  </View>
-);
 
 const CurrentLocationCard = () => {
   const [isVisible, setIsVisible] = useState(false);
@@ -837,19 +838,10 @@ const renderSettings = () => (
 
 return (
   <SafeAreaView style={[styles.safeArea, dynamicStyles.safeArea]}>
-    <View style={[styles.container, dynamicStyles.container]}>
+    <View style={[styles.container, dynamicStyles.container, { paddingBottom: 70 }]}>
       <StatusBar barStyle={isDarkMode ? "light-content" : "dark-content"} />
       
-      {/* Üst kısımdaki ayarlar butonu */}
-      <View style={styles.toggleContainer}>
-        <TouchableOpacity
-          style={[styles.settingsButton]}
-          onPress={() => setShowSettings(true)}
-        >
-          <Text style={styles.buttonModeText}>⚙️</Text>
-        </TouchableOpacity>
-      </View>
-
+      {/* Üst kısımdaki başlık ve bilgi alanı */}
       <Text style={[styles.title, dynamicStyles.text]}>
         {strings[currentLanguage].appName}
       </Text>
@@ -860,12 +852,13 @@ return (
       
       <FlatList
         data={getFilteredItems()}
+        contentContainerStyle={{ paddingBottom: 60 }} // Alt menü için alan bırak
         renderItem={({ item }) => (
           <TouchableOpacity
             style={[
               styles.itemContainer,
               dynamicStyles.itemContainer,
-              selectedItems.includes(item) && dynamicStyles.selectedItem, // styles.selectedItem yerine dynamicStyles.selectedItem kullanıyoruz
+              selectedItems.includes(item) && dynamicStyles.selectedItem,
             ]}
             onPress={() =>
               setSelectedItems(prev =>
@@ -876,7 +869,7 @@ return (
             <Text style={[
               styles.itemText, 
               dynamicStyles.text,
-              selectedItems.includes(item) && dynamicStyles.selectedItemText // Seçili durum için metin stili
+              selectedItems.includes(item) && dynamicStyles.selectedItemText
             ]}>
               {item}
             </Text>
@@ -888,24 +881,28 @@ return (
         keyExtractor={(item, index) => item + index.toString()}
       />
       
-      {isLoading && ( // Yükleme göstergesi
+      {isLoading && (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#007AFF" />
         </View>
       )}
-      <View style={styles.bottomButtonsContainer}>
-        <TouchableOpacity 
-          style={[styles.homeButton, { backgroundColor: '#34C759' }]} 
-          onPress={saveHomeLocation}
-        > 
-          <Text style={styles.buttonText}>
-            {strings[currentLanguage].buttons.saveLocation}
-          </Text>
-        </TouchableOpacity>
-      
-        
-      </View>
 
+      {/* Alt Menü - Daha belirgin */}
+      <View style={[styles.bottomNav, dynamicStyles.bottomNav]}>
+        <TouchableOpacity
+          style={styles.navButton}
+          onPress={saveHomeLocation}
+        >
+          <Text style={[styles.navButtonIcon, dynamicStyles.text]}>🏠</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.navButton}
+          onPress={() => setShowSettings(true)}
+        >
+          <Text style={[styles.navButtonIcon, dynamicStyles.text]}>⚙️</Text>
+          
+        </TouchableOpacity>
+      </View>
       {renderSettings()}
     </View>
   </SafeAreaView>

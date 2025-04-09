@@ -91,7 +91,7 @@ export const categorizedItemsTR = {
     "🔌 Şarj Kablosu",
     "🔊 Bluetooth Hoparlör",
     "📺 HDMI Kablosu",
-    "🔋 Taşınabilir Batarya"
+  
   ]
 };
 
@@ -156,7 +156,7 @@ export const categorizedItemsEN = {
     "🔌 Charging Cable",
     "🔊 Bluetooth Speaker",
     "📺 HDMI Cable",
-    "🔋 Portable Battery"
+    
   ]
 };
 

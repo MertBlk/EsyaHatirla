@@ -53,15 +53,35 @@ export const createDynamicStyles = (isDarkMode) => ({
     borderColor: isDarkMode ? colors.dark.border : colors.light.border
   },
   itemContainer: {
-    backgroundColor: isDarkMode ? colors.dark.surface : colors.light.surface,
-    borderColor: isDarkMode ? colors.dark.border : colors.light.border
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingVertical: 16,
+    paddingHorizontal: 18,
+    borderRadius: 12,
+    marginBottom: 10,
+    shadowColor: colors.common.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 3,
+    elevation: 2,
   },
   text: {
     color: isDarkMode ? colors.dark.text : colors.light.text
   },
   categoryButton: {
-    backgroundColor: isDarkMode ? colors.dark.surface : colors.light.surface,
-    borderColor: isDarkMode ? colors.dark.border : colors.light.border
+    minWidth: 100,
+    height: 40,
+    marginRight: 10,
+    borderRadius: 20,
+    paddingHorizontal: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: colors.common.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 3,
   },
   categoryText: {
     color: isDarkMode ? colors.dark.textSecondary : colors.light.textSecondary
@@ -71,8 +91,16 @@ export const createDynamicStyles = (isDarkMode) => ({
     borderColor: colors.common.primary
   },
   statsCard: {
+    flexDirection: 'row',
     backgroundColor: isDarkMode ? colors.dark.surface : colors.light.surface,
-    borderColor: isDarkMode ? colors.dark.border : colors.light.border
+    borderRadius: 16,
+    padding: 16,
+    marginVertical: 12,
+    shadowColor: colors.common.shadow,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    elevation: 5,
   },
   selectedItem: {
     backgroundColor: isDarkMode ? colors.dark.background : colors.light.surface,
@@ -92,7 +120,43 @@ export const createDynamicStyles = (isDarkMode) => ({
   languageButtonText: {
     color: isDarkMode ? colors.dark.text : colors.light.text,
     fontSize: 16
-  }
+  },
+  bottomNav: {
+    flexDirection: 'row',
+    justifyContent: 'space-evenly',
+    paddingVertical: 12,
+    backgroundColor: isDarkMode ? colors.dark.surface : colors.light.surface,
+    borderTopWidth: 1,
+    borderTopColor: isDarkMode ? colors.dark.border : colors.light.border,
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    shadowColor: colors.common.shadow,
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 5,
+    elevation: 12,
+  },
+  navButton: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+  },
+  navButtonActive: {
+    borderBottomWidth: 3,
+    borderBottomColor: colors.common.primary,
+  },
+  navButtonIcon: {
+    fontSize: 26,
+    marginBottom: 4,
+  },
+  navButtonText: {
+    fontSize: 12,
+    fontWeight: '500',
+  },
 });
 
 // Sabit stiller (StyleSheet.create içindeki tüm mevcut stiller aynen korundu)
@@ -126,20 +190,18 @@ export const styles = StyleSheet.create({
     paddingVertical: 0,    
   },
   categoryButton: {
-    width: 100,
-    height: 36,
-    marginRight: 8,
-    borderRadius: 18,
-    backgroundColor: colors.dark.surface, // Koyu kart rengi
-    borderWidth: 1,
-    borderColor: colors.dark.border, // Koyu kenarlık
+    minWidth: 100,
+    height: 40,
+    marginRight: 10,
+    borderRadius: 20,
+    paddingHorizontal: 14,
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: colors.common.shadow,
-    shadowOffset: { width: 0, height: 1 },
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
+    shadowRadius: 3,
+    elevation: 3,
   },
   selectedCategoryButton: {
     backgroundColor: colors.common.primary,
@@ -160,18 +222,15 @@ export const styles = StyleSheet.create({
     flexDirection: "row", 
     alignItems: "center",
     justifyContent: "space-between", 
-    padding: 18,
+    paddingVertical: 16,
+    paddingHorizontal: 18,
     borderRadius: 12,
-    backgroundColor: colors.dark.surface, // Koyu kart rengi
     marginBottom: 10,
     shadowColor: colors.common.shadow,
-    shadowOffset: {
-      width: 0,
-      height: 1,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 3,
+    elevation: 2,
   },
   selectedItem: { 
     backgroundColor: colors.dark.background, // Koyu arka plan
@@ -284,38 +343,25 @@ export const styles = StyleSheet.create({
   statsCard: {
     flexDirection: 'row',
     backgroundColor: colors.dark.surface, // Koyu kart rengi
-    borderRadius: 12,
-    padding: 8,
-    marginBottom: 8,
+    borderRadius: 16,
+    padding: 16,
+    marginVertical: 12,
     shadowColor: colors.common.shadow,
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-  statItem: {
-    flex: 1,
-    alignItems: 'center', 
-    
-    marginBottom: 16,
-    shadowColor: colors.common.shadow,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    elevation: 5,
   },
   statItem: {
     flex: 1,
     alignItems: 'center',
   },
   statNumber: {
-    fontSize: 24,
+    fontSize: 28,
     fontWeight: 'bold',
-    color: '#0A84FF', // iOS mavi
   },
   statLabel: {
     fontSize: 14,
-    color: colors.dark.textSecondary, // Açık gri yazı
     marginTop: 4,
   },
   statDivider: {
@@ -497,7 +543,45 @@ export const styles = StyleSheet.create({
   settingLabel: {
     fontSize: 16,
     flex: 1,
-  }
+  },
+
+  // Alt menü butonları için stil
+  bottomNav: {
+    flexDirection: 'row',
+    justifyContent: 'space-evenly',
+    paddingVertical: 12,
+    backgroundColor: colors.dark.surface, // Koyu kart rengi
+    borderTopWidth: 1,
+    borderTopColor: colors.dark.border, // Koyu kenarlık
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    shadowColor: colors.common.shadow,
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 5,
+    elevation: 12,
+  },
+  navButton: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+  },
+  navButtonActive: {
+    borderBottomWidth: 3,
+    borderBottomColor: colors.common.primary,
+  },
+  navButtonIcon: {
+    fontSize: 26,
+    marginBottom: 4,
+  },
+  navButtonText: {
+    fontSize: 12,
+    fontWeight: '500',
+  },
 });
 
 export default {
