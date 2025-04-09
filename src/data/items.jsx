@@ -56,7 +56,7 @@ export const categorizedItemsTR = {
     "👟 Spor Ayakkabı",
     "🎽 Spor Kıyafeti",
     "🧴 Havlu",
-    "🥤 Su Şişesi",
+    
     "🏋️‍♂️ Ağırlık Eldiveni",
     "🍏 Sağlıklı Atıştırmalık",
     "🎧 Spor İçin Kulaklık",
@@ -121,7 +121,6 @@ export const categorizedItemsEN = {
     "👟 Sports Shoes",
     "🎽 Sports Clothes",
     "🧴 Towel",
-    "🥤 Water Bottle",
     "🏋️‍♂️ Gym Gloves",
     "🍏 Healthy Snack",
     "🎧 Sports Headphones",

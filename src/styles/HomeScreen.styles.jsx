@@ -53,35 +53,15 @@ export const createDynamicStyles = (isDarkMode) => ({
     borderColor: isDarkMode ? colors.dark.border : colors.light.border
   },
   itemContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingVertical: 16,
-    paddingHorizontal: 18,
-    borderRadius: 12,
-    marginBottom: 10,
-    shadowColor: colors.common.shadow,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 3,
-    elevation: 2,
+    backgroundColor: isDarkMode ? colors.dark.surface : colors.light.surface,
+    borderColor: isDarkMode ? colors.dark.border : colors.light.border
   },
   text: {
     color: isDarkMode ? colors.dark.text : colors.light.text
   },
   categoryButton: {
-    minWidth: 100,
-    height: 40,
-    marginRight: 10,
-    borderRadius: 20,
-    paddingHorizontal: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: colors.common.shadow,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 3,
+    backgroundColor: isDarkMode ? colors.dark.surface : colors.light.surface,
+    borderColor: isDarkMode ? colors.dark.border : colors.light.border
   },
   categoryText: {
     color: isDarkMode ? colors.dark.textSecondary : colors.light.textSecondary
@@ -91,16 +71,8 @@ export const createDynamicStyles = (isDarkMode) => ({
     borderColor: colors.common.primary
   },
   statsCard: {
-    flexDirection: 'row',
     backgroundColor: isDarkMode ? colors.dark.surface : colors.light.surface,
-    borderRadius: 16,
-    padding: 16,
-    marginVertical: 12,
-    shadowColor: colors.common.shadow,
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.15,
-    shadowRadius: 6,
-    elevation: 5,
+    borderColor: isDarkMode ? colors.dark.border : colors.light.border
   },
   selectedItem: {
     backgroundColor: isDarkMode ? colors.dark.background : colors.light.surface,
@@ -190,18 +162,20 @@ export const styles = StyleSheet.create({
     paddingVertical: 0,    
   },
   categoryButton: {
-    minWidth: 100,
-    height: 40,
-    marginRight: 10,
-    borderRadius: 20,
-    paddingHorizontal: 14,
+    width: 100,
+    height: 36,
+    marginRight: 8,
+    borderRadius: 18,
+    backgroundColor: colors.dark.surface, // Koyu kart rengi
+    borderWidth: 1,
+    borderColor: colors.dark.border, // Koyu kenarlık
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: colors.common.shadow,
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 3,
+    shadowRadius: 2,
+    elevation: 2,
   },
   selectedCategoryButton: {
     backgroundColor: colors.common.primary,
@@ -222,15 +196,18 @@ export const styles = StyleSheet.create({
     flexDirection: "row", 
     alignItems: "center",
     justifyContent: "space-between", 
-    paddingVertical: 16,
-    paddingHorizontal: 18,
+    padding: 18,
     borderRadius: 12,
+    backgroundColor: colors.dark.surface, // Koyu kart rengi
     marginBottom: 10,
     shadowColor: colors.common.shadow,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 3,
-    elevation: 2,
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 3,
   },
   selectedItem: { 
     backgroundColor: colors.dark.background, // Koyu arka plan
@@ -343,25 +320,38 @@ export const styles = StyleSheet.create({
   statsCard: {
     flexDirection: 'row',
     backgroundColor: colors.dark.surface, // Koyu kart rengi
-    borderRadius: 16,
-    padding: 16,
-    marginVertical: 12,
+    borderRadius: 12,
+    padding: 8,
+    marginBottom: 8,
     shadowColor: colors.common.shadow,
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.15,
-    shadowRadius: 6,
-    elevation: 5,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  statItem: {
+    flex: 1,
+    alignItems: 'center', 
+    
+    marginBottom: 16,
+    shadowColor: colors.common.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   statItem: {
     flex: 1,
     alignItems: 'center',
   },
   statNumber: {
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: 'bold',
+    color: '#0A84FF', // iOS mavi
   },
   statLabel: {
     fontSize: 14,
+    color: colors.dark.textSecondary, // Açık gri yazı
     marginTop: 4,
   },
   statDivider: {
