@@ -37,6 +37,8 @@ const HomeScreen = () => {
   const [locationName, setLocationName] = useState('');
   const [currentLanguage, setCurrentLanguage] = useState('tr');
   const [showSettings, setShowSettings] = useState(false);
+  const [saveNotification, setSaveNotification] = useState(false); // Yeni state eklendi
+const [isChangingLocation, setIsChangingLocation] = useState(false);
 
   // Dil değiştirme fonksiyonunu ekleyelim
   const toggleLanguage = async () => {
@@ -468,7 +470,6 @@ const saveLocation = async () => {
       if (location && location.coords) {
         const { latitude, longitude } = location.coords;
         
-        // Konum adını almak için modal göster
         Alert.prompt(
           "Konum Adı",
           "Bu konumu nasıl adlandırmak istersiniz?",
@@ -482,11 +483,13 @@ const saveLocation = async () => {
               onPress: async (name) => {
                 if (!name) return;
                 
+                // Mevcut seçili eşyaları bu konuma kaydet
                 const newLocation = {
                   id: Date.now().toString(),
                   name,
                   latitude,
-                  longitude
+                  longitude,
+                  items: [...selectedItems] // O anda seçili eşyaları bu konuma ekle
                 };
   
                 const updatedLocations = [...savedLocations, newLocation];
@@ -499,6 +502,13 @@ const saveLocation = async () => {
                 );
   
                 setHomeLocation(newLocation);
+                
+                // Test için bir mesaj göster
+                console.log(`"${name}" konumu için kaydedilen eşyalar:`, selectedItems);
+                Alert.alert(
+                  "Konum ve Eşyalar Kaydedildi",
+                  `"${name}" konumuna ${selectedItems.length} eşya kaydedildi.`
+                );
               }
             }
           ]
@@ -511,6 +521,43 @@ const saveLocation = async () => {
   };
   
 
+// Konuma ait eşyaları güncelle (sessiz mod ekleyelim)
+const updateLocationItems = async (locationId, silent = true) => {
+  // Güncellenecek konumu bul
+  const locationToUpdate = savedLocations.find(loc => loc.id === locationId);
+  
+  if (!locationToUpdate) return false;
+  
+  try {
+    // Konum için seçili eşyaları güncelle
+    const updatedLocation = {
+      ...locationToUpdate,
+      items: [...selectedItems]
+    };
+    
+    // Tüm konumları güncelle
+    const updatedLocations = savedLocations.map(loc => 
+      loc.id === locationId ? updatedLocation : loc
+    );
+    
+    // State ve AsyncStorage'ı güncelle
+    setSavedLocations(updatedLocations);
+    await AsyncStorage.setItem('@saved_locations', JSON.stringify(updatedLocations));
+    
+    // Kısa bildirim göster
+    setSaveNotification(true);
+    setTimeout(() => setSaveNotification(false), 1500);
+
+    // Sessiz mod değilse konsola bilgi ver
+    if (!silent) {
+      console.log(`"${updatedLocation.name}" konumu için eşyalar güncellendi:`, selectedItems);
+    }
+    return true;
+  } catch (error) {
+    console.error("Konum eşyaları güncellenirken hata:", error);
+    return false;
+  }
+};
 
 // StatsCard bileşenini güncelleyelim
 const StatsCard = () => (
@@ -608,8 +655,54 @@ useEffect(() => {
   setSelectedCategory(strings[currentLanguage].categories.all);
 }, [currentLanguage]);
 
+// HomeScreen bileşenindeki diğer useEffect'lerin altına ekleyin
+useEffect(() => {
+  // Konum değişikliği sırasında çalışmasını engelle
+  if (isChangingLocation) return;
+  
+  // Seçili konum ve seçili eşyalar varsa eşyaları otomatik kaydet
+  const autoSaveItems = async () => {
+    if (homeLocation?.id && selectedItems) {
+      // Eşyalar değiştiğinde otomatik olarak güncelle
+      await updateLocationItems(homeLocation.id);
+      console.log(`📍 ${homeLocation.name} konumu için eşyalar otomatik güncellendi:`, selectedItems);
+    }
+  };
+  
+  // Çok sık güncelleme olmaması için küçük bir gecikme ekleyelim
+  const timeoutId = setTimeout(autoSaveItems, 500);
+  
+  // Cleanup fonksiyonu
+  return () => clearTimeout(timeoutId);
+}, [selectedItems, homeLocation, isChangingLocation]); // Bağımlılıkları güncelleyelim
+
 const CurrentLocationCard = () => {
   const [isVisible, setIsVisible] = useState(false);
+
+  // Güvenli bir şekilde konum değiştir
+  const safelyChangeLocation = (location) => {
+    setIsChangingLocation(true); // İşlemi başlat
+    
+    // Eşyaları yükle
+    if (location.items && Array.isArray(location.items)) {
+      setSelectedItems(location.items);
+      console.log(`${location.name} konumu için eşyalar yüklendi:`, location.items);
+    } else {
+      // Konum için tanımlı eşya yoksa boş liste
+      setSelectedItems([]);
+    }
+    
+    // Yeni konumu seç
+    setHomeLocation(location);
+    
+    // Modal'ı kapat
+    setIsVisible(false);
+    
+    // Kısa bir gecikmeyle bayrağı kapat
+    setTimeout(() => {
+      setIsChangingLocation(false);
+    }, 1000);
+  };
 
   return (
     <>
@@ -646,10 +739,7 @@ const CurrentLocationCard = () => {
                     style={[styles.locationItem, dynamicStyles.locationItem, { 
                       backgroundColor: homeLocation?.id === item.id ? '#34C759' : dynamicStyles.locationItem.backgroundColor 
                     }]}
-                    onPress={() => {
-                      setHomeLocation(item);
-                      setIsVisible(false);
-                    }}
+                    onPress={() => safelyChangeLocation(item)}
                   >
                     <Text style={[styles.locationItemText, dynamicStyles.locationItemText, { 
                       color: homeLocation?.id === item.id ? '#FFF' : dynamicStyles.locationItemText.color 
@@ -904,6 +994,14 @@ return (
         </TouchableOpacity>
       </View>
       {renderSettings()}
+
+      {saveNotification && (
+        <View style={styles.saveNotification}>
+          <Text style={styles.saveNotificationText}>
+            ✓ Eşyalar otomatik kaydedildi
+          </Text>
+        </View>
+      )}
     </View>
   </SafeAreaView>
 );
