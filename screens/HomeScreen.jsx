@@ -7,7 +7,7 @@ import NetInfo from "@react-native-community/netinfo";
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createDynamicStyles, styles } from '../src/styles/HomeScreen.styles';
-import { getCategorizedItems, getInitialItems, categoryIcons, getCategories } from '../src/data/items';
+import { getCategorizedItems, getInitialItems, categoryIcons, getCategories, items } from '../src/data/items';
 import strings from '../src/localization/strings';
 
 // Kendi oluşturduğumuz bileşenler ve kancalar
@@ -22,6 +22,8 @@ import notificationManager from '../src/utils/notificationManager';
 
 // Global bildirim dinleyicisini tanımla
 let notificationListener = null;
+// Konum bildirimini kontrol etmek için bayrak
+let locationSaveNotified = false;
 
 const HomeScreen = () => {
   // Dil kancasını kullan
@@ -58,7 +60,8 @@ const HomeScreen = () => {
     isChangingLocation,
     setIsChangingLocation,
     saveLocation,
-    simulateLocationChange
+    simulateLocationChange,
+    updateLocationItems
   } = locationTracking;
 
   // Tema değişkenleri
@@ -78,6 +81,83 @@ const HomeScreen = () => {
       border: '#E5E5EA'
     }
   };
+  
+  // Diller arası eşya çevirisi yapan yardımcı fonksiyon
+  const translateItemsBetweenLanguages = useCallback((sourceItems, fromLang, toLang) => {
+    if (!sourceItems || sourceItems.length === 0) return [];
+    if (fromLang === toLang) return sourceItems;
+    
+    try {
+      // Sonuç dizisi
+      const translatedItems = [];
+      
+      // Her bir seçili eşya için
+      sourceItems.forEach(item => {
+        // Emoji karakterini bul (eşleştirme için kullanılacak)
+        const emojiMatch = item.match(/^([\u{1F300}-\u{1F9FF}|\u{2600}-\u{26FF}|\u{2700}-\u{27BF}]+)/u);
+        if (!emojiMatch) {
+          // Emoji bulunamadıysa, bu eşyayı atla
+          console.warn(`Emoji bulunamadı: ${item}`);
+          return;
+        }
+        
+        // Seçili eşyanın emojisini al
+        const itemEmoji = emojiMatch[0].trim();
+        
+        // Bütün kategorilerde bu emojiye sahip eşyayı ara
+        const sourceLangCategories = items[fromLang] || items['en'];
+        const targetLangCategories = items[toLang] || items['en'];
+        
+        // Kaynak dilde bu emojiye sahip tüm eşyaları bul
+        let foundInCategory = null;
+        let foundItem = null;
+        
+        // Kaynak dilde bu emojiye sahip eşyayı ve kategorisini bul
+        Object.entries(sourceLangCategories).forEach(([category, categoryItems]) => {
+          const matchingItem = categoryItems.find(i => i.startsWith(itemEmoji));
+          if (matchingItem && matchingItem === item) {
+            foundInCategory = category;
+            foundItem = matchingItem;
+          }
+        });
+        
+        // Eğer kategori bulunamadıysa çevirme işlemi yapamıyoruz
+        if (!foundInCategory) {
+          console.warn(`Kategori bulunamadı: ${item}`);
+          return;
+        }
+        
+        // Hedef dildeki eşdeğer kategoriyi bul
+        // NOT: Kategoriler arasında birebir eşleşme olup olmadığını kontrol et
+        const targetCategory = Object.keys(targetLangCategories).find(category => {
+          // Kategori eşleşme kontrolü yap (basit)
+          // Hedef dildeki kategorileri kontrol et
+          return targetLangCategories[category].some(i => i.startsWith(itemEmoji));
+        });
+        
+        if (!targetCategory) {
+          console.warn(`Hedef kategori bulunamadı: ${itemEmoji} - ${item}`);
+          return;
+        }
+        
+        // Hedef dildeki aynı emojiye sahip eşyayı bul
+        const translatedItem = targetLangCategories[targetCategory].find(i => 
+          i.startsWith(itemEmoji)
+        );
+        
+        if (translatedItem) {
+          translatedItems.push(translatedItem);
+        } else {
+          console.warn(`Çeviri bulunamadı: ${item}`);
+        }
+      });
+      
+      return translatedItems;
+    } catch (error) {
+      console.error("Eşya çevirisi hatası:", error);
+      return sourceItems; // Hata durumunda orijinal diziyi döndür
+    }
+  }, []);
 
   // Bildirim ayarlarını kurma
   useEffect(() => {
@@ -329,11 +409,31 @@ const HomeScreen = () => {
                 dynamicStyles.itemContainer,
                 selectedItems.includes(item) && dynamicStyles.selectedItem,
               ]}
-              onPress={() =>
-                setSelectedItems(prev =>
-                  prev.includes(item) ? prev.filter(i => i !== item) : [...prev, item]
-                )
-              }
+              onPress={() => {
+                setSelectedItems(prev => {
+                  const newItems = prev.includes(item) 
+                    ? prev.filter(i => i !== item) 
+                    : [...prev, item];
+                  
+                  // Ev konumu varsa, eşyaları sessizce güncelle
+                  if (homeLocation) {
+                    // Konum güncelleme işleminde olduğumuzu belirt
+                    setIsChangingLocation(true);
+                    
+                    setTimeout(() => {
+                      // Eşyaları güncelle (sessizce)
+                      updateLocationItems(homeLocation.id, true);
+                      
+                      // Bildirim artık gösterilmiyor
+                      
+                      // Güncelleme işlemi tamamlandı
+                      setIsChangingLocation(false);
+                    }, 100);
+                  }
+                  
+                  return newItems;
+                })
+              }}
             >
               <Text style={[
                 styles.itemText, 
@@ -381,14 +481,7 @@ const HomeScreen = () => {
         {/* Ayarlar modalı */}
         {renderSettings()}
 
-        {/* Bildirim */}
-        {saveNotification && (
-          <View style={styles.saveNotification}>
-            <Text style={styles.saveNotificationText}>
-              ✓ {safeGetString('alerts.itemsSaved', 'Eşyalar otomatik kaydedildi')}
-            </Text>
-          </View>
-        )}
+        {/* Bildirim kaldırıldı */}
       </View>
     </SafeAreaView>
   );

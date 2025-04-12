@@ -6,6 +6,7 @@ class NotificationManager {
     this.isProcessing = false;
     this.lastNotificationTime = 0;
     this.cooldownPeriod = 2000; // 2 saniye bekleme süresi
+    this.notificationHistory = new Map(); // Bildirim geçmişini saklayacak map
   }
 
   async setupNotifications(currentLanguage) {
@@ -85,12 +86,22 @@ class NotificationManager {
 
   async sendAlert(strings, currentLanguage, selectedItems) {
     try {
+      // Eğer son 5 saniye içinde aynı içerikle bildirim gönderildiyse çık
+      const now = Date.now();
+      const notificationKey = `${currentLanguage}-${selectedItems.join(',')}`;
+      const lastSentTime = this.notificationHistory.get(notificationKey);
+      
+      if (lastSentTime && now - lastSentTime < 5000) {
+        console.log('Aynı bildirim son 5 saniye içinde gönderildi, tekrar gönderilmiyor.');
+        return false;
+      }
+
       const itemsList = selectedItems.length > 0 
         ? `${selectedItems.join('\n• ')}` 
         : strings[currentLanguage].alerts.noItems;
 
       // Bildirim gönder
-      return await this.send({
+      const result = await this.send({
         content: {
           title: strings[currentLanguage].alerts.warning,
           body: `${strings[currentLanguage].alerts.items}\n• ${itemsList}`,
@@ -104,6 +115,13 @@ class NotificationManager {
         },
         trigger: null
       });
+
+      // Başarılı gönderilen bildirimleri geçmişe ekle
+      if (result) {
+        this.notificationHistory.set(notificationKey, now);
+      }
+      
+      return result;
     } catch (error) {
       console.error('Uyarı gönderme hatası:', error);
       return false;

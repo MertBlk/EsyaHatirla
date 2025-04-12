@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import * as Location from 'expo-location';
 import { Alert, Vibration } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -17,6 +17,10 @@ export default function useLocationTracking(strings, currentLanguage, selectedIt
   const [locationSubscription, setLocationSubscription] = useState(null);
   const [isTracking, setIsTracking] = useState(false);
   const [isChangingLocation, setIsChangingLocation] = useState(false);
+  
+  // Bildirim kontrolü için ref kullan
+  const lastHomeLocationRef = useRef(null);
+  const notificationShownRef = useRef(false);
 
   // Kullanıcının konum izinlerini isteme
   const requestPermissions = async () => {
@@ -142,9 +146,12 @@ export default function useLocationTracking(strings, currentLanguage, selectedIt
           console.log("Mevcut mesafe:", distance);
 
           // 50 metre uzaklaşınca bildirim gönder
-          if (distance >= 50) {
+          if (distance >= 50 && !notificationShownRef.current) {
             notificationManager.sendAlert(strings, currentLanguage, selectedItems);
             Vibration.vibrate(1000);
+            notificationShownRef.current = true;
+          } else if (distance < 50) {
+            notificationShownRef.current = false;
           }
         }
       );
@@ -290,8 +297,16 @@ export default function useLocationTracking(strings, currentLanguage, selectedIt
 
   // homeLocation state'ine yeni bir değer atandığında çalışacak fonksiyon
   useEffect(() => {
-    if (homeLocation) {
-      console.log("Kaydedilen konum:", homeLocation);
+    // Son kaydedilen konum ID'si ile mevcut ID'yi karşılaştır
+    const isNewLocation = homeLocation && (!lastHomeLocationRef.current || 
+      homeLocation.id !== lastHomeLocationRef.current.id);
+    
+    // Sadece yeni bir konum eklendiyse ve manuel ise (isChangingLocation false ise) bildirim göster
+    if (homeLocation && isNewLocation && !isChangingLocation) {
+      // Kaydedilen konumu konsola yazdır
+      console.log("Kaydedilen konum (yeni):", homeLocation.name);
+      
+      // Konum manüel olarak kaydedildiğinde bildirim göster
       Alert.alert(
         strings[currentLanguage]?.location?.success || "Başarılı",
         strings[currentLanguage]?.location?.locationSaved || "Ev konumunuz başarıyla kaydedildi!",
@@ -304,8 +319,21 @@ export default function useLocationTracking(strings, currentLanguage, selectedIt
       // Home konumunu AsyncStorage'a kaydet
       AsyncStorage.setItem(STORAGE_KEYS.HOME_LOCATION, JSON.stringify(homeLocation))
         .catch(error => console.error("Home konum kaydedilirken hata:", error));
+
+    } else if (homeLocation && isChangingLocation) {
+      // Konumu sessizce değiştir, sadece takibi başlat
+      startLocationTracking(homeLocation);
+      
+      // Home konumunu sessizce kaydet
+      AsyncStorage.setItem(STORAGE_KEYS.HOME_LOCATION, JSON.stringify(homeLocation))
+        .catch(error => console.error("Home konum kaydedilirken hata:", error));
     }
-  }, [homeLocation, startLocationTracking, strings, currentLanguage]);
+    
+    // Son konumu ref'te sakla
+    if (homeLocation) {
+      lastHomeLocationRef.current = homeLocation;
+    }
+  }, [homeLocation, startLocationTracking, strings, currentLanguage, isChangingLocation]);
 
   return {
     homeLocation,
