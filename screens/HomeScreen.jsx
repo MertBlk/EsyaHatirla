@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useColorScheme, useMemo } from "react";
+import { useState, useEffect, useCallback, useColorScheme, useMemo, memo } from "react";
 import { View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet, Alert, Vibration, Modal, ScrollView, StatusBar, ActivityIndicator, Switch } from "react-native";
 import CheckBox from '@react-native-community/checkbox';
 import * as Location from 'expo-location';
@@ -40,7 +40,7 @@ const HomeScreen = () => {
   const [locationName, setLocationName] = useState('');
   const [showSettings, setShowSettings] = useState(false);
   const [saveNotification, setSaveNotification] = useState(false); // Yeni state eklendi
-const [isChangingLocation, setIsChangingLocation] = useState(false);
+  const [isChangingLocation, setIsChangingLocation] = useState(false);
   
   // Bu satırı ekleyin - languages ve languageMenuVisible tanımı
   const [languageMenuVisible, setLanguageMenuVisible] = useState(false);
@@ -57,6 +57,36 @@ const [isChangingLocation, setIsChangingLocation] = useState(false);
     { code: 'sv', flag: '🇸🇪', name: 'Svenska' }, // İsveççe
     { code: 'pl', flag: '🇵🇱', name: 'Polski' } // Lehçe
   ];
+
+  // Filtreleme işlevi için getFilteredItems fonksiyonunu ekleyelim
+  const getFilteredItems = useCallback(() => {
+    // Seçilen kategoriye göre eşyaları filtrele
+    const categorizedItems = getCategorizedItems(currentLanguage);
+    
+    let filteredItems = [];
+    
+    // Tümü kategorisi seçiliyse tüm kategorilerdeki eşyaları göster
+    if (selectedCategory === 'Tümü' || selectedCategory === 'All' || 
+        selectedCategory === safeGetString('categories.all', 'Tümü')) {
+      // Tüm kategorilerdeki eşyaları düzleştir
+      Object.values(categorizedItems).forEach(categoryItems => {
+        filteredItems = [...filteredItems, ...categoryItems];
+      });
+    } else {
+      // Belirli bir kategori seçilmişse sadece o kategorideki eşyaları göster
+      filteredItems = categorizedItems[selectedCategory] || [];
+    }
+    
+    // Arama filtresi uygulandıysa, eşyaları filtrele
+    if (searchQuery) {
+      const lowerQuery = searchQuery.toLowerCase();
+      filteredItems = filteredItems.filter(item =>
+        item.toLowerCase().includes(lowerQuery)
+      );
+    }
+    
+    return filteredItems;
+  }, [currentLanguage, selectedCategory, searchQuery, safeGetString]);
 
   // Dil değiştirme fonksiyonunu optimize edelim
   const toggleLanguage = async () => {
@@ -239,7 +269,7 @@ const setLanguage = async (lang) => {
   const homeLocationArray = {};
 
  // HomeScreen bileşeni içinde, en üste ekleyin:
-const safeGetString = (path, fallback = '') => {
+const safeGetString = useCallback((path, fallback = '') => {
   try {
     const parts = path.split('.');
     let result = strings[currentLanguage];
@@ -253,7 +283,7 @@ const safeGetString = (path, fallback = '') => {
   } catch (e) {
     return fallback;
   }
-};
+}, [currentLanguage]);
 
 // Örnek kullanım:
 // safeGetString('categories.all', 'Tümü')
@@ -384,34 +414,62 @@ const saveLocation = async () => {
   }, [homeLocation, locationSubscription, sendNotification]); // Bağımlılıkları ekledik
 
   const simulateLocationChange = () => {
-    // Test koordinatları (Ev konumundan 100 metre uzakta)
-    const testLocation = {
-      coords: {
-        latitude: (homeLocation?.latitude || 0) + 0.001, // Yaklaşık 100 metre kuzey
-        longitude: homeLocation?.longitude || 0
-      }
-    };
+  // Önce ev konumu kontrolü yap
+  if (!homeLocation) {
+    Alert.alert(
+      safeGetString('alerts.warning', 'Uyarı'),
+      safeGetString('location.noLocation', 'Önce bir konum kaydetmelisiniz'),
+      [{ text: safeGetString('buttons.ok', 'Tamam'), onPress: () => saveHomeLocation() }]
+    );
+    return;
+  }
 
-    // Konum değişimini simüle et
-    if (locationSubscription) {
-      console.log("Simüle edilen konum:", testLocation);
-      locationSubscription.remove();
-      
-      const distance = getDistanceFromLatLonInMeters(
-        homeLocation.latitude,
-        homeLocation.longitude,
-        testLocation.coords.latitude,
-        testLocation.coords.longitude
-      );
-
-      console.log("Hesaplanan mesafe:", distance, "metre");
-      
-      if (distance >= 50) {
-        sendAlert();
-        Vibration.vibrate(1000);
-      }
+  console.log("Konum değişikliği simüle ediliyor...");
+  
+  // Test koordinatları (Ev konumundan 100 metre uzakta)
+  const testLocation = {
+    coords: {
+      latitude: homeLocation.latitude + 0.001, // Yaklaşık 100 metre kuzey
+      longitude: homeLocation.longitude
     }
   };
+
+  // Takip var mı yok mu önemli değil, direkt bildirim gönder
+  console.log("Simüle edilen konum:", testLocation.coords);
+  
+  const distance = getDistanceFromLatLonInMeters(
+    homeLocation.latitude,
+    homeLocation.longitude,
+    testLocation.coords.latitude,
+    testLocation.coords.longitude
+  );
+
+  console.log("Hesaplanan mesafe:", distance, "metre");
+  
+  if (distance >= 50) {
+    // Bildirimi gönder ve kullanıcıya mesafeyi bildir
+    sendAlert();
+    Vibration.vibrate(1000);
+    
+    Alert.alert(
+      safeGetString('alerts.locationTest', 'Test Başarılı'),
+      safeGetString('alerts.distanceFound', 'Test mesafesi: ') + Math.round(distance) + 
+      safeGetString('alerts.meters', ' metre')
+    );
+  } else {
+    Alert.alert(
+      safeGetString('alerts.locationTest', 'Konum Testi'),
+      safeGetString('alerts.distanceTooSmall', 'Hesaplanan mesafe 50m\'den az: ') + 
+      Math.round(distance) + safeGetString('alerts.meters', ' metre')
+    );
+  }
+  
+  // Eğer varsa mevcut location subscription'ı temizle
+  if (locationSubscription) {
+    locationSubscription.remove();
+    setLocationSubscription(null);
+  }
+};
 
   // 📏 İki nokta arasındaki mesafeyi hesapla (Haversine Formülü)
   const getDistanceFromLatLonInMeters = (lat1, lon1, lat2, lon2) => {
@@ -612,28 +670,8 @@ const updateLocationItems = async (locationId, silent = true) => {
     return false;
   }
 };
-const StatsCard = () => (
-  <View style={[styles.statsCard, dynamicStyles.statsCard]}>
-    <View style={styles.statItem}>
-      <Text style={[styles.statNumber, { color: '#007AFF' }]}>
-        {selectedItems.length}
-      </Text>
-      <Text style={[styles.statLabel, dynamicStyles.categoryText]}>
-        {safeGetString('stats.selected', 'Seçili')}
-      </Text>
-    </View>
-    <View style={styles.statDivider} />
-    <View style={styles.statItem}>
-      <Text style={[styles.statNumber, { color: isDarkMode ? '#64D2FF' : '#0A84FF' }]}>
-        {getFilteredItems().length}
-      </Text>
-      <Text style={[styles.statLabel, dynamicStyles.categoryText]}>
-        {safeGetString('stats.total', 'Toplam')}
-      </Text>
-    </View>
-  </View>
-);
-const CategorySelector = () => {
+
+const CategorySelector = memo(({ currentLanguage, selectedCategory, setSelectedCategory, safeGetString, isDarkMode }) => {
   // Her dil değişikliğinde güncel kategorileri al
   const categories = getCategories(currentLanguage);
   
@@ -680,14 +718,16 @@ const CategorySelector = () => {
         <TouchableOpacity
           style={[
             styles.categoryButton,
-            dynamicStyles.categoryButton,
-            selectedCategory === allCategoryName && styles.selectedCategoryButton
+            { backgroundColor: isDarkMode ? '#2C2C2E' : '#FFFFFF', 
+              borderColor: isDarkMode ? '#3A3A3C' : '#E5E5EA' },
+            selectedCategory === allCategoryName && 
+              { backgroundColor: '#007AFF', borderColor: '#007AFF' }
           ]}
           onPress={() => setSelectedCategory(allCategoryName)}
         >
           <Text style={[
             styles.categoryButtonText,
-            dynamicStyles.categoryText,
+            { color: isDarkMode ? '#FFFFFF' : '#000000' },
             selectedCategory === allCategoryName && { color: '#FFFFFF' }
           ]}>
             {getCategoryIcon(allCategoryName)} {allCategoryName}
@@ -700,14 +740,16 @@ const CategorySelector = () => {
             key={category}
             style={[
               styles.categoryButton,
-              dynamicStyles.categoryButton,
-              selectedCategory === category && styles.selectedCategoryButton
+              { backgroundColor: isDarkMode ? '#2C2C2E' : '#FFFFFF', 
+                borderColor: isDarkMode ? '#3A3A3C' : '#E5E5EA' },
+              selectedCategory === category && 
+                { backgroundColor: '#007AFF', borderColor: '#007AFF' }
             ]}
             onPress={() => setSelectedCategory(category)}
           >
             <Text style={[
               styles.categoryButtonText,
-              dynamicStyles.categoryText,
+              { color: isDarkMode ? '#FFFFFF' : '#000000' },
               selectedCategory === category && { color: '#FFFFFF' }
             ]}>
               {getCategoryIcon(category)} {category}
@@ -717,55 +759,50 @@ const CategorySelector = () => {
       </ScrollView>
     </View>
   );
-};
-const getFilteredItems = () => {
-  const items = getCategorizedItems(currentLanguage);
-  const allCategoryName = strings[currentLanguage]?.categories?.all || "Tümü";
-  
-  if (!selectedCategory || selectedCategory === allCategoryName) {
-    return getInitialItems(currentLanguage);
-  }
-  
-  return items[selectedCategory] || [];
-};
-useEffect(() => {
-  setItems(getInitialItems(currentLanguage));
-  // Kategoriyi de sıfırla - güvenli erişim ekledim
-  setSelectedCategory(strings[currentLanguage]?.categories?.all || "Tümü");
-}, [currentLanguage]);
+});
 
-// HomeScreen bileşenindeki diğer useEffect'lerin altına ekleyin
-useEffect(() => {
-  // Konum değişikliği sırasında çalışmasını engelle
-  if (isChangingLocation) return;
-  
-  // Seçili konum ve seçili eşyalar varsa eşyaları otomatik kaydet
-  const autoSaveItems = async () => {
-    if (homeLocation?.id && selectedItems) {
-      // Eşyalar değiştiğinde otomatik olarak güncelle
-      await updateLocationItems(homeLocation.id);
-      console.log(`📍 ${homeLocation.name} konumu için eşyalar otomatik güncellendi:`, selectedItems);
-    }
-  };
-  
-  // Çok sık güncelleme olmaması için küçük bir gecikme ekleyelim
-  const timeoutId = setTimeout(autoSaveItems, 500);
-  
-  // Cleanup fonksiyonu
-  return () => clearTimeout(timeoutId);
-}, [selectedItems, homeLocation, isChangingLocation]); // Bağımlılıkları güncelleyelim
+const StatsCard = memo(({ selectedItems, getFilteredItems, safeGetString, isDarkMode }) => (
+  <View style={[styles.statsCard, { backgroundColor: isDarkMode ? '#2C2C2E' : '#FFFFFF' }]}>
+    <View style={styles.statItem}>
+      <Text style={[styles.statNumber, { color: '#007AFF' }]}>
+        {selectedItems.length}
+      </Text>
+      <Text style={[styles.statLabel, { color: isDarkMode ? '#EBEBF5' : '#666666' }]}>
+        {safeGetString('stats.selected', 'Seçili')}
+      </Text>
+    </View>
+    <View style={styles.statDivider} />
+    <View style={styles.statItem}>
+      <Text style={[styles.statNumber, { color: isDarkMode ? '#64D2FF' : '#0A84FF' }]}>
+        {getFilteredItems().length}
+      </Text>
+      <Text style={[styles.statLabel, { color: isDarkMode ? '#EBEBF5' : '#666666' }]}>
+        {safeGetString('stats.total', 'Toplam')}
+      </Text>
+    </View>
+  </View>
+));
 
-const CurrentLocationCard = () => {
+const CurrentLocationCard = memo(({ 
+  homeLocation, 
+  strings, 
+  currentLanguage, 
+  isDarkMode,
+  savedLocations, 
+  setSavedLocations,
+  setIsChangingLocation,
+  setSelectedItems,
+  setHomeLocation
+}) => {
   const [isVisible, setIsVisible] = useState(false);
 
   // Güvenli bir şekilde konum değiştir
-  const safelyChangeLocation = (location) => {
+  const safelyChangeLocation = useCallback((location) => {
     setIsChangingLocation(true); // İşlemi başlat
     
     // Eşyaları yükle
     if (location.items && Array.isArray(location.items)) {
       setSelectedItems(location.items);
-      console.log(`${location.name} konumu için eşyalar yüklendi:`, location.items);
     } else {
       // Konum için tanımlı eşya yoksa boş liste
       setSelectedItems([]);
@@ -781,19 +818,19 @@ const CurrentLocationCard = () => {
     setTimeout(() => {
       setIsChangingLocation(false);
     }, 1000);
-  };
+  }, [setIsChangingLocation, setSelectedItems, setHomeLocation]);
 
   return (
     <>
       <TouchableOpacity 
-        style={[styles.statsCard, dynamicStyles.statsCard]}
+        style={[styles.statsCard, { backgroundColor: isDarkMode ? '#2C2C2E' : '#FFFFFF' }]}
         onPress={() => setIsVisible(true)}
       >
         <View style={styles.currentLocationContainer}>
-          <Text style={[styles.locationTitle, dynamicStyles.text]}>
+          <Text style={[styles.locationTitle, { color: isDarkMode ? '#FFFFFF' : '#000000' }]}>
             {strings[currentLanguage]?.location?.title || "Konum"}
           </Text>
-          <Text style={[styles.locationName, dynamicStyles.categoryText]}>
+          <Text style={[styles.locationName, { color: isDarkMode ? '#EBEBF5' : '#666666' }]}>
             {homeLocation?.name || strings[currentLanguage]?.location?.noLocation || "Konum seçilmedi"}
           </Text>
         </View>
@@ -804,13 +841,60 @@ const CurrentLocationCard = () => {
         animationType="slide"
         transparent={true}
       >
-        <SafeAreaView style={[styles.modalSafeArea, dynamicStyles.modalBackground]}>
-          <View style={[styles.locationModalContainer, dynamicStyles.modalContent]}>
+        <View style={[styles.modalSafeArea, { backgroundColor: isDarkMode ? 'rgba(0,0,0,0.8)' : 'rgba(0,0,0,0.5)' }]}>
+          <View style={[styles.locationModalContainer, { backgroundColor: isDarkMode ? '#2C2C2E' : '#FFFFFF' }]}>
             <Text style={styles.locationModalTitle}>
               {strings[currentLanguage]?.location?.savedLocations || "Kaydedilmiş Konumlar"}
             </Text>
             
-            {/* ... FlatList ve diğer kod ... */}
+            {savedLocations.length > 0 ? (
+              <FlatList
+                data={savedLocations}
+                keyExtractor={(item) => item.id}
+                removeClippedSubviews={true}
+                initialNumToRender={10}
+                maxToRenderPerBatch={5}
+                getItemLayout={(data, index) => (
+                  {length: 70, offset: 70 * index, index}
+                )}
+                renderItem={({ item }) => (
+                  <TouchableOpacity
+                    style={[
+                      styles.locationListItem,
+                      homeLocation?.id === item.id && styles.selectedLocationItem
+                    ]}
+                    onPress={() => safelyChangeLocation(item)}
+                  >
+                    <Text style={styles.locationItemIcon}>📍</Text>
+                    <View style={styles.locationItemContent}>
+                      <Text style={[
+                        styles.locationItemName, 
+                        { color: isDarkMode ? '#FFFFFF' : '#000000' }
+                      ]}>
+                        {item.name}
+                      </Text>
+                      {item.items && (
+                        <Text style={[
+                          styles.locationItemInfo,
+                          { color: isDarkMode ? '#EBEBF5' : '#666666' }
+                        ]}>
+                          {item.items.length} {strings[currentLanguage]?.location?.itemCount || "eşya"}
+                        </Text>
+                      )}
+                    </View>
+                    {homeLocation?.id === item.id && (
+                      <Text style={styles.checkmarkText}>✓</Text>
+                    )}
+                  </TouchableOpacity>
+                )}
+              />
+            ) : (
+              <View style={styles.emptyListContainer}>
+                <Text style={[styles.emptyListText, { color: isDarkMode ? '#EBEBF5' : '#666666' }]}>
+                  {strings[currentLanguage]?.location?.noSavedLocations || "Henüz kaydedilmiş konum yok"}
+                </Text>
+              </View>
+            )}
 
             <TouchableOpacity 
               style={styles.closeButton}
@@ -821,30 +905,21 @@ const CurrentLocationCard = () => {
               </Text>
             </TouchableOpacity>
           </View>
-        </SafeAreaView>
+        </View>
       </Modal>
     </>
   );
-};
-// ThemeToggle bileşenini güncelle
-const ThemeToggle = () => (
-  <TouchableOpacity
-    style={[styles.themeToggleButton]} // homeButton yerine yeni stil
-    onPress={() => setIsDarkMode(!isDarkMode)}
-  >
-    <Text style={styles.buttonModeText}>
-      {isDarkMode ? '☀️' : '🌙'}
-      
-    </Text>
-  </TouchableOpacity>
-);
+});
 
-// LanguageToggle bileşenini güncelleyelim
-const LanguageToggle = () => {
+const LanguageToggle = memo(({ 
+  languages, 
+  currentLanguage, 
+  setLanguage, 
+  strings,
+  isDarkMode 
+}) => {
   const [isLanguageModalOpen, setIsLanguageModalOpen] = useState(false);
   
-  // languages tanımını kaldırın, ana bileşenden kullanacağız
-
   return (
     <>
       <TouchableOpacity
@@ -869,17 +944,21 @@ const LanguageToggle = () => {
           onPress={() => setIsLanguageModalOpen(false)}
         >
           <View 
-            style={[styles.languageModalContainer, dynamicStyles.modalContent]}
+            style={[styles.languageModalContainer, { backgroundColor: isDarkMode ? '#2C2C2E' : '#FFFFFF' }]}
             onStartShouldSetResponder={() => true}
             onTouchEnd={e => e.stopPropagation()}
           >
-            <Text style={[styles.modalSubTitle, dynamicStyles.text]}>
+            <Text style={[styles.modalSubTitle, { color: isDarkMode ? '#FFFFFF' : '#000000' }]}>
               Dil Seçimi / Language
             </Text>
             
             <FlatList
               data={languages}
+              initialNumToRender={8}
               keyExtractor={(item) => item.code}
+              getItemLayout={(data, index) => (
+                {length: 50, offset: 50 * index, index}
+              )}
               renderItem={({ item }) => (
                 <TouchableOpacity
                   style={[
@@ -894,7 +973,7 @@ const LanguageToggle = () => {
                   <Text style={styles.languageItemFlag}>{item.flag}</Text>
                   <Text style={[
                     styles.languageItemText, 
-                    dynamicStyles.text,
+                    { color: isDarkMode ? '#FFFFFF' : '#000000' },
                     currentLanguage === item.code && styles.selectedLanguageText
                   ]}>
                     {item.name}
@@ -919,7 +998,18 @@ const LanguageToggle = () => {
       </Modal>
     </>
   );
-};
+});
+
+const ThemeToggle = memo(({ isDarkMode, setIsDarkMode }) => (
+  <TouchableOpacity
+    style={[styles.themeToggleButton]} 
+    onPress={() => setIsDarkMode(!isDarkMode)}
+  >
+    <Text style={styles.buttonModeText}>
+      {isDarkMode ? '☀️' : '🌙'}
+    </Text>
+  </TouchableOpacity>
+));
 
 const dynamicStyles = createDynamicStyles(isDarkMode);
 
@@ -1117,13 +1207,47 @@ return (
         {strings[currentLanguage]?.appName || "Unutma!"}
       </Text>
       
-      <CategorySelector />
-      <StatsCard />
-      <CurrentLocationCard />
+      <CategorySelector 
+        currentLanguage={currentLanguage}
+        selectedCategory={selectedCategory}
+        setSelectedCategory={setSelectedCategory}
+        safeGetString={safeGetString}
+        isDarkMode={isDarkMode}
+      />
+      
+      <StatsCard 
+        selectedItems={selectedItems}
+        getFilteredItems={getFilteredItems}
+        safeGetString={safeGetString}
+        isDarkMode={isDarkMode}
+      />
+      
+      <CurrentLocationCard 
+        homeLocation={homeLocation}
+        strings={strings}
+        currentLanguage={currentLanguage}
+        isDarkMode={isDarkMode}
+        savedLocations={savedLocations}
+        setSavedLocations={setSavedLocations}
+        setIsChangingLocation={setIsChangingLocation}
+        setSelectedItems={setSelectedItems}
+        setHomeLocation={setHomeLocation}
+      />
       
       <FlatList
         data={getFilteredItems()}
-        contentContainerStyle={{ paddingBottom: 60 }} // Alt menü için alan bırak
+        contentContainerStyle={{ paddingBottom: 60 }}
+        // Optimize edilmiş FlatList ayarları
+        removeClippedSubviews={true} // Ekran dışındaki öğeleri bellekten kaldırır
+        initialNumToRender={10} // Başlangıçta kaç öğe render edileceğini belirler
+        maxToRenderPerBatch={5} // Her batch'te kaç öğenin render edileceğini belirler
+        updateCellsBatchingPeriod={50} // Batch arasındaki bekleme süresi (ms)
+        windowSize={5} // Görünüm penceresi boyutu (ekranın kaç katı öğenin bellekte tutulacağı)
+        getItemLayout={(data, index) => (
+          // Sabit yükseklikli öğeler için boyut hesaplaması önceden yapılır
+          {length: 60, offset: 60 * index, index}
+        )}
+        keyExtractor={(item, index) => `item-${index}-${item.substring(0,3)}`}
         renderItem={({ item }) => (
           <TouchableOpacity
             style={[
@@ -1149,7 +1273,6 @@ return (
             )}
           </TouchableOpacity>
         )}
-        keyExtractor={(item, index) => item + index.toString()}
       />
       
       {isLoading && (

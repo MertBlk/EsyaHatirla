@@ -11,7 +11,7 @@ const strings = {
       electronics: 'Elektronik'
     },
     buttons: {
-      saveLocation: '🏠 Konumunu Kaydet',
+      saveLocation: ' Konumunu Kaydet',
       testLocation: '🔄 Konum Değişimini Test Et',
       close: 'Kapat'
     },
@@ -63,7 +63,7 @@ const strings = {
       electronics: 'Electronics'
     },
     buttons: {
-      saveLocation: '🏠 Save Location',
+      saveLocation: 'Save Location',
       testLocation: '🔄 Test Location Change',
       close: 'Close'
     },
@@ -115,7 +115,7 @@ const strings = {
       electronics: 'Elektronik'
     },
     buttons: {
-      saveLocation: '🏠 Standort speichern',
+      saveLocation: ' Standort speichern',
       testLocation: '🔄 Standortänderung testen',
       close: 'Schließen'
     },
@@ -167,7 +167,7 @@ const strings = {
       electronics: 'Électronique'
     },
     buttons: {
-      saveLocation: '🏠 Enregistrer l\'emplacement',
+      saveLocation: 'Enregistrer l\'emplacement',
       testLocation: '🔄 Tester le changement d\'emplacement',
       close: 'Fermer'
     },
@@ -219,7 +219,7 @@ const strings = {
       electronics: 'Electrónica'
     },
     buttons: {
-      saveLocation: '🏠 Guardar ubicación',
+      saveLocation: ' Guardar ubicación',
       testLocation: '🔄 Probar cambio de ubicación',
       close: 'Cerrar'
     },
@@ -271,7 +271,7 @@ const strings = {
       electronics: 'Elettronica'
     },
     buttons: {
-      saveLocation: '🏠 Salva posizione',
+      saveLocation: 'Salva posizione',
       testLocation: '🔄 Prova cambio posizione',
       close: 'Chiudi'
     },
@@ -323,7 +323,7 @@ const strings = {
       electronics: 'Eletrônicos'
     },
     buttons: {
-      saveLocation: '🏠 Salvar localização',
+      saveLocation: 'Salvar localização',
       testLocation: '🔄 Testar mudança de localização',
       close: 'Fechar'
     },
@@ -375,7 +375,7 @@ const strings = {
       electronics: 'Электроника'
     },
     buttons: {
-      saveLocation: '🏠 Сохранить местоположение',
+      saveLocation: ' Сохранить местоположение',
       testLocation: '🔄 Тест изменения местоположения',
       close: 'Закрыть'
     },
@@ -427,7 +427,7 @@ const strings = {
       electronics: '電子機器'
     },
     buttons: {
-      saveLocation: '🏠 位置を保存',
+      saveLocation: ' 位置を保存',
       testLocation: '🔄 位置変更をテスト',
       close: '閉じる'
     },
@@ -479,7 +479,7 @@ const strings = {
       electronics: '电子产品'
     },
     buttons: {
-      saveLocation: '🏠 保存位置',
+      saveLocation: ' 保存位置',
       testLocation: '🔄 测试位置变化',
       close: '关闭'
     },
@@ -531,7 +531,7 @@ const strings = {
       electronics: 'إلكترونيات'
     },
     buttons: {
-      saveLocation: '🏠 حفظ الموقع',
+      saveLocation: ' حفظ الموقع',
       testLocation: '🔄 اختبار تغيير الموقع',
       close: 'إغلاق'
     },
@@ -583,7 +583,7 @@ const strings = {
       electronics: 'Elektronica'
     },
     buttons: {
-      saveLocation: '🏠 Locatie opslaan',
+      saveLocation: ' Locatie opslaan',
       testLocation: '🔄 Locatiewijziging testen',
       close: 'Sluiten'
     },
@@ -635,7 +635,7 @@ const strings = {
       electronics: 'Elektronik'
     },
     buttons: {
-      saveLocation: '🏠 Spara plats',
+      saveLocation: ' Spara plats',
       testLocation: '🔄 Testa platsändring',
       close: 'Stäng'
     },
@@ -687,7 +687,7 @@ const strings = {
       electronics: 'Elektronika'
     },
     buttons: {
-      saveLocation: '🏠 Zapisz lokalizację',
+      saveLocation: ' Zapisz lokalizację',
       testLocation: '🔄 Testuj zmianę lokalizacji',
       close: 'Zamknij'
     },
