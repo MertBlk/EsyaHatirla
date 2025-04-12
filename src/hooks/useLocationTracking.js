@@ -125,14 +125,27 @@ export default function useLocationTracking(strings, currentLanguage, selectedIt
       if (locationSubscription) {
         return;
       }
-
+      
       console.log("Takip başlatılıyor, konum:", locationToTrack);
 
+      // Kullanıcı hareketine dayalı daha akıllı takip
+      const foregroundPermission = await Location.requestForegroundPermissionsAsync();
+      const backgroundPermission = await Location.requestBackgroundPermissionsAsync();
+      
+      // Pil optimizasyonu için ayarları düzenleme
+      const accuracy = backgroundPermission.status === 'granted' 
+        ? Location.Accuracy.Balanced
+        : Location.Accuracy.Low;
+        
+      const timeInterval = backgroundPermission.status === 'granted'
+        ? 180000 // Arka planda 3 dakika
+        : 90000;  // Ön planda 1.5 dakika
+        
       const subscription = await Location.watchPositionAsync(
         {
-          accuracy: Location.Accuracy.Balanced,
-          timeInterval: 60000, // 60 saniyede bir kontrol et
-          distanceInterval: 10, // 10 metrede bir kontrol et
+          accuracy: accuracy,
+          timeInterval: timeInterval,
+          distanceInterval: 15, // 15 metrede bir kontrol et (battarya tasarrufu)
         },
         (location) => {
           const { latitude, longitude } = location.coords;

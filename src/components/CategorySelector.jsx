@@ -1,11 +1,31 @@
-import React, { memo } from 'react';
+import React, { memo, useMemo } from 'react';
 import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
 import { getCategories, categoryIcons } from '../../src/data/items';
 import { styles } from '../../src/styles/HomeScreen.styles';
 
+const CategoryButton = memo(({ category, isSelected, onPress, isDarkMode, categoryIcon }) => (
+  <TouchableOpacity
+    style={[
+      styles.categoryButton,
+      { backgroundColor: isDarkMode ? '#2C2C2E' : '#FFFFFF', 
+        borderColor: isDarkMode ? '#3A3A3C' : '#E5E5EA' },
+      isSelected && { backgroundColor: '#007AFF', borderColor: '#007AFF' }
+    ]}
+    onPress={onPress}
+  >
+    <Text style={[
+      styles.categoryButtonText,
+      { color: isDarkMode ? '#FFFFFF' : '#000000' },
+      isSelected && { color: '#FFFFFF' }
+    ]}>
+      {categoryIcon} {category}
+    </Text>
+  </TouchableOpacity>
+));
+
 const CategorySelector = memo(({ currentLanguage, selectedCategory, setSelectedCategory, safeGetString, isDarkMode }) => {
   // Her dil değişikliğinde güncel kategorileri al
-  const categories = getCategories(currentLanguage);
+  const categories = useMemo(() => getCategories(currentLanguage), [currentLanguage]);
   
   // Tümü kategori adını güvenli bir şekilde al
   const allCategoryName = safeGetString('categories.all', 'Tümü');
@@ -18,78 +38,54 @@ const CategorySelector = memo(({ currentLanguage, selectedCategory, setSelectedC
     }
     
     // 'Tümü' veya 'All' gibi özel durumlar için kontrol
-    if (categoryName === allCategoryName) {
-      return categoryIcons['Tümü'] || categoryIcons['All'] || '🗂️';
+    if (categoryName === 'Tümü' || categoryName === 'All' || 
+        categoryName === safeGetString('categories.all', 'Tümü')) {
+      return '🗂️';
     }
     
-    // Kategorinin dile göre eşdeğerini bulmak için tüm kategorilerde ara
-    const allCategories = Object.keys(categoryIcons);
-    // Kategori türünü tahmin et (ilk kelimesine bakarak)
-    const categoryFirstWord = categoryName.split(/[ /]/)[0].toLowerCase();
+    // Dile özgü eşleşmeleri kontrol et
+    const languageSpecificIcons = {
+      tr: { 'Günlük': '🔑', 'İş/Okul': '📚', 'Spor': '🏀', 'Seyahat': '✈️', 'Sağlık': '💊', 'Elektronik': '📱' },
+      en: { 'Daily': '🔑', 'Work/School': '📚', 'Sports': '🏀', 'Travel': '✈️', 'Health': '💊', 'Electronics': '📱' }
+    };
     
-    // Benzer kategori bul
-    for (const key of allCategories) {
-      const keyFirstWord = key.split(/[ /]/)[0].toLowerCase();
-      if (keyFirstWord === categoryFirstWord) {
-        return categoryIcons[key];
-      }
+    // Dile özgü ikonları kontrol et
+    if (languageSpecificIcons[currentLanguage] && languageSpecificIcons[currentLanguage][categoryName]) {
+      return languageSpecificIcons[currentLanguage][categoryName];
     }
     
-    // Hiçbir eşleşme bulunamazsa varsayılan bir ikon döndür
-    return '📋';
+    // Uygun ikon bulunamazsa varsayılan olarak klasör ikonu kullan
+    return '📁';
   };
 
   return (
-    <View style={styles.categoryWrapper}>
-      <ScrollView 
-        horizontal 
-        showsHorizontalScrollIndicator={false} 
-        contentContainerStyle={styles.categoryScrollContent}
-      >
-        {/* Her zaman "Tümü" kategori butonunu göster */}
-        <TouchableOpacity
-          style={[
-            styles.categoryButton,
-            { backgroundColor: isDarkMode ? '#2C2C2E' : '#FFFFFF', 
-              borderColor: isDarkMode ? '#3A3A3C' : '#E5E5EA' },
-            selectedCategory === allCategoryName && 
-              { backgroundColor: '#007AFF', borderColor: '#007AFF' }
-          ]}
-          onPress={() => setSelectedCategory(allCategoryName)}
-        >
-          <Text style={[
-            styles.categoryButtonText,
-            { color: isDarkMode ? '#FFFFFF' : '#000000' },
-            selectedCategory === allCategoryName && { color: '#FFFFFF' }
-          ]}>
-            {getCategoryIcon(allCategoryName)} {allCategoryName}
-          </Text>
-        </TouchableOpacity>
+    <ScrollView
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      style={styles.categoryWrapper}
+      contentContainerStyle={styles.categoryScrollContent}
+    >
+      {/* Her zaman "Tümü" kategori butonunu göster */}
+      <CategoryButton
+        category={allCategoryName}
+        isSelected={selectedCategory === allCategoryName}
+        onPress={() => setSelectedCategory(allCategoryName)}
+        isDarkMode={isDarkMode}
+        categoryIcon={getCategoryIcon(allCategoryName)}
+      />
 
-        {/* Dile özgü kategorileri göster */}
-        {categories.map(category => (
-          <TouchableOpacity
-            key={category}
-            style={[
-              styles.categoryButton,
-              { backgroundColor: isDarkMode ? '#2C2C2E' : '#FFFFFF', 
-                borderColor: isDarkMode ? '#3A3A3C' : '#E5E5EA' },
-              selectedCategory === category && 
-                { backgroundColor: '#007AFF', borderColor: '#007AFF' }
-            ]}
-            onPress={() => setSelectedCategory(category)}
-          >
-            <Text style={[
-              styles.categoryButtonText,
-              { color: isDarkMode ? '#FFFFFF' : '#000000' },
-              selectedCategory === category && { color: '#FFFFFF' }
-            ]}>
-              {getCategoryIcon(category)} {category}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
-    </View>
+      {/* Dile özgü kategorileri göster */}
+      {categories.map(category => (
+        <CategoryButton
+          key={category}
+          category={category}
+          isSelected={selectedCategory === category}
+          onPress={() => setSelectedCategory(category)}
+          isDarkMode={isDarkMode}
+          categoryIcon={getCategoryIcon(category)}
+        />
+      ))}
+    </ScrollView>
   );
 });
 

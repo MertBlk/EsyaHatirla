@@ -7,6 +7,8 @@ class NotificationManager {
     this.lastNotificationTime = 0;
     this.cooldownPeriod = 2000; // 2 saniye bekleme süresi
     this.notificationHistory = new Map(); // Bildirim geçmişini saklayacak map
+    this.maxHistorySize = 100; // Maksimum tarih geçmişi boyutu
+    this.cleanupInterval = null; // Temizleme işlemi için interval
   }
 
   async setupNotifications(currentLanguage) {
@@ -28,10 +30,54 @@ class NotificationManager {
 
       // Bildirim butonlarını dile göre güncelle
       await this.updateNotificationButtons(currentLanguage);
+      
+      // Hafızayı yönetmek için periyodik temizleme işlemi başlat
+      this.startHistoryCleanup();
+      
       return true;
     } catch (error) {
       console.error('Bildirim ayarları hatası:', error);
       return false;
+    }
+  }
+
+  // Bellek optimizasyonu için bildirim geçmişi temizliği
+  startHistoryCleanup() {
+    // Önce eski interval'i temizle
+    if (this.cleanupInterval) {
+      clearInterval(this.cleanupInterval);
+    }
+    
+    // Her 30 dakikada bir eski bildirimleri temizle
+    this.cleanupInterval = setInterval(() => {
+      this.cleanupOldNotifications();
+    }, 30 * 60 * 1000);
+  }
+  
+  cleanupOldNotifications() {
+    try {
+      const now = Date.now();
+      const oneHourAgo = now - (60 * 60 * 1000);
+      
+      // 1 saatten eski bildirimleri temizle
+      for (const [key, timestamp] of this.notificationHistory) {
+        if (timestamp < oneHourAgo) {
+          this.notificationHistory.delete(key);
+        }
+      }
+      
+      // Eğer tarihçe çok büyüdüyse, en eski kayıtları sil
+      if (this.notificationHistory.size > this.maxHistorySize) {
+        const entries = Array.from(this.notificationHistory.entries())
+          .sort((a, b) => a[1] - b[1]);
+        
+        const entriesToDelete = entries.slice(0, entries.length - this.maxHistorySize);
+        entriesToDelete.forEach(([key]) => {
+          this.notificationHistory.delete(key);
+        });
+      }
+    } catch (error) {
+      console.error('Bildirim temizleme hatası:', error);
     }
   }
 
@@ -96,15 +142,19 @@ class NotificationManager {
         return false;
       }
 
-      const itemsList = selectedItems.length > 0 
-        ? `${selectedItems.join('\n• ')}` 
-        : strings[currentLanguage].alerts.noItems;
+      // Eğer selectedItems boş veya geçersizse, varsayılan metin göster
+      let itemsList;
+      if (!selectedItems || !Array.isArray(selectedItems) || selectedItems.length === 0) {
+        itemsList = strings?.[currentLanguage]?.alerts?.noItems || "Seçili eşya yok";
+      } else {
+        itemsList = selectedItems.join('\n• ');
+      }
 
-      // Bildirim gönder
+      // Bildirim gönder (Güvenlik kontrolü ile)
       const result = await this.send({
         content: {
-          title: strings[currentLanguage].alerts.warning,
-          body: `${strings[currentLanguage].alerts.items}\n• ${itemsList}`,
+          title: strings?.[currentLanguage]?.alerts?.warning || "Uyarı",
+          body: `${strings?.[currentLanguage]?.alerts?.items || "Eşyalarınız:"}\n• ${itemsList}`,
           sound: 'default',
           priority: 'high',
           categoryIdentifier: 'items',
@@ -126,6 +176,17 @@ class NotificationManager {
       console.error('Uyarı gönderme hatası:', error);
       return false;
     }
+  }
+  
+  // Component unmount edildiğinde temizleme yapmak için
+  cleanup() {
+    if (this.cleanupInterval) {
+      clearInterval(this.cleanupInterval);
+      this.cleanupInterval = null;
+    }
+    
+    // Gereksiz bellek kullanımını azalt
+    this.notificationHistory.clear();
   }
 }
 

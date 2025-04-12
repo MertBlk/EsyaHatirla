@@ -25,15 +25,32 @@ let notificationListener = null;
 // Konum bildirimini kontrol etmek için bayrak
 let locationSaveNotified = false;
 
+// Memoize edilmiş liste öğesi bileşeni
+const ItemComponent = memo(({ item, selectedItems, toggleItem, isDarkMode, dynamicStyles }) => (
+  <TouchableOpacity
+    style={[
+      styles.itemContainer,
+      dynamicStyles.itemContainer,
+      selectedItems.includes(item) && dynamicStyles.selectedItem,
+    ]}
+    onPress={() => toggleItem(item)}
+  >
+    <Text style={[
+      styles.itemText, 
+      dynamicStyles.text,
+      selectedItems.includes(item) && dynamicStyles.selectedItemText
+    ]}>
+      {item}
+    </Text>
+    {selectedItems.includes(item) && (
+      <Text style={styles.checkIcon}>✔️</Text>
+    )}
+  </TouchableOpacity>
+));
+
 const HomeScreen = () => {
-  // Dil kancasını kullan
   const { 
-    currentLanguage, 
-    setLanguage, 
-    toggleLanguage, 
-    safeGetString, 
-    languages 
-  } = useLanguage();
+    currentLanguage,  setLanguage, toggleLanguage, safeGetString, languages } = useLanguage();
   
   // Diğer state'ler 
   const [items, setItems] = useState(() => getInitialItems(currentLanguage));
@@ -51,18 +68,7 @@ const HomeScreen = () => {
   // Konum takibi kancasını kullan
   const locationTracking = useLocationTracking(strings, currentLanguage, selectedItems);
   
-  const {
-    homeLocation,
-    setHomeLocation,
-    savedLocations,
-    setSavedLocations,
-    isTracking,
-    isChangingLocation,
-    setIsChangingLocation,
-    saveLocation,
-    simulateLocationChange,
-    updateLocationItems
-  } = locationTracking;
+  const {homeLocation,setHomeLocation,savedLocations,setSavedLocations,isTracking,isChangingLocation,setIsChangingLocation, saveLocation,simulateLocationChange,updateLocationItems} = locationTracking;
 
   // Tema değişkenleri
   const theme = {
@@ -271,6 +277,32 @@ const HomeScreen = () => {
   // Dinamik stilleri oluştur
   const dynamicStyles = useMemo(() => createDynamicStyles(isDarkMode), [isDarkMode]);
 
+  const toggleItem = (item) => {
+    setSelectedItems(prev => {
+      const newItems = prev.includes(item) 
+        ? prev.filter(i => i !== item) 
+        : [...prev, item];
+      
+      // Ev konumu varsa, eşyaları sessizce güncelle
+      if (homeLocation) {
+        // Konum güncelleme işleminde olduğumuzu belirt
+        setIsChangingLocation(true);
+        
+        setTimeout(() => {
+          // Eşyaları güncelle (sessizce)
+          updateLocationItems(homeLocation.id, true);
+          
+          // Bildirim artık gösterilmiyor
+          
+          // Güncelleme işlemi tamamlandı
+          setIsChangingLocation(false);
+        }, 100);
+      }
+      
+      return newItems;
+    })
+  };
+
   return (
     <SafeAreaView style={[styles.safeArea, dynamicStyles.safeArea]}>
       <View style={[styles.container, dynamicStyles.container, { paddingBottom: 70 }]}>
@@ -326,49 +358,13 @@ const HomeScreen = () => {
           )}
           keyExtractor={(item, index) => `item-${index}-${item.substring(0,3)}`}
           renderItem={({ item }) => (
-            <TouchableOpacity
-              style={[
-                styles.itemContainer,
-                dynamicStyles.itemContainer,
-                selectedItems.includes(item) && dynamicStyles.selectedItem,
-              ]}
-              onPress={() => {
-                setSelectedItems(prev => {
-                  const newItems = prev.includes(item) 
-                    ? prev.filter(i => i !== item) 
-                    : [...prev, item];
-                  
-                  // Ev konumu varsa, eşyaları sessizce güncelle
-                  if (homeLocation) {
-                    // Konum güncelleme işleminde olduğumuzu belirt
-                    setIsChangingLocation(true);
-                    
-                    setTimeout(() => {
-                      // Eşyaları güncelle (sessizce)
-                      updateLocationItems(homeLocation.id, true);
-                      
-                      // Bildirim artık gösterilmiyor
-                      
-                      // Güncelleme işlemi tamamlandı
-                      setIsChangingLocation(false);
-                    }, 100);
-                  }
-                  
-                  return newItems;
-                })
-              }}
-            >
-              <Text style={[
-                styles.itemText, 
-                dynamicStyles.text,
-                selectedItems.includes(item) && dynamicStyles.selectedItemText
-              ]}>
-                {item}
-              </Text>
-              {selectedItems.includes(item) && (
-                <Text style={styles.checkIcon}>✔️</Text>
-              )}
-            </TouchableOpacity>
+            <ItemComponent 
+              item={item}
+              selectedItems={selectedItems}
+              toggleItem={toggleItem}
+              isDarkMode={isDarkMode}
+              dynamicStyles={dynamicStyles}
+            />
           )}
         />
         
