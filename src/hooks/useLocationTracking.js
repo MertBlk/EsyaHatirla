@@ -158,11 +158,25 @@ export default function useLocationTracking(strings, currentLanguage, selectedIt
 
           console.log("Mevcut mesafe:", distance);
 
-          // 50 metre uzaklaşınca bildirim gönder
+          // 50 metre uzaklaşınca bildirim gönder ve konum takibini durdur
           if (distance >= 50 && !notificationShownRef.current) {
             notificationManager.sendAlert(strings, currentLanguage, selectedItems);
             Vibration.vibrate(1000);
             notificationShownRef.current = true;
+            
+            // Konum takibini durdur
+            if (subscription) {
+              subscription.remove();
+              setLocationSubscription(null);
+              setIsTracking(false);
+              console.log("Konum takibi durduruldu: Kullanıcı konumdan 50+ metre uzaklaştı");
+              
+              // Kullanıcıya bildirim göster
+              Alert.alert(
+                strings[currentLanguage]?.alerts?.trackingStopped || "Takip Durduruldu", 
+                strings[currentLanguage]?.alerts?.leftArea || "Belirtilen alandan uzaklaştınız. Konum takibi durduruldu."
+              );
+            }
           } else if (distance < 50) {
             notificationShownRef.current = false;
           }
