@@ -633,6 +633,20 @@ dropdownArrow: {
   fontSize: 10,
   color: '#8E8E93',
 },
+languageNotification: {
+  position: 'absolute',
+  top: 50,
+  alignSelf: 'center',
+  backgroundColor: 'rgba(0, 122, 255, 0.9)',
+  paddingVertical: 8,
+  paddingHorizontal: 16,
+  borderRadius: 20,
+},
+languageNotificationText: {
+  color: '#FFFFFF',
+  fontWeight: '600',
+  fontSize: 14,
+}
 });
 
 export default {

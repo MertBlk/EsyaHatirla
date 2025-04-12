@@ -1,11 +1,12 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useState, useMemo } from 'react';
 
 const ThemeContext = createContext();
 
 export const ThemeProvider = ({ children }) => {
   const [isDark, setIsDark] = useState(true);
 
-  const theme = {
+  // useMemo ile theme objesinin gereksiz yere yeniden oluşturulmasını engelliyoruz
+  const theme = useMemo(() => ({
     dark: {
       background: '#1C1C1E',
       surface: '#2C2C2E',
@@ -22,7 +23,7 @@ export const ThemeProvider = ({ children }) => {
     },
     toggleTheme: () => setIsDark(!isDark),
     isDark
-  };
+  }), [isDark]); // Sadece isDark değiştiğinde yeniden hesapla
 
   return (
     <ThemeContext.Provider value={theme}>

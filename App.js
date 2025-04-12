@@ -3,13 +3,14 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { StatusBar } from 'expo-status-bar';
 import { View, useColorScheme } from 'react-native';
+import { useMemo } from 'react'; // useMemo eklenmiş
 import HomeScreen from './screens/HomeScreen';
 import { ThemeProvider } from './context/ThemeContext';
 
 const Stack = createNativeStackNavigator();
 
-// Tema renkleri
-const theme = {
+// Tema renklerini bileşen dışında sabit olarak tanımlayalım
+const themeColors = {
   dark: {
     background: '#1C1C1E',
     surface: '#2C2C2E',
@@ -27,26 +28,33 @@ const theme = {
 export default function App() {
   const colorScheme = useColorScheme();
   const isDarkMode = colorScheme === 'dark';
-  const colors = isDarkMode ? theme.dark : theme.light;
+  
+  // Renkleri useMemo ile sarmalayarak optimize edelim
+  const colors = useMemo(() => {
+    return isDarkMode ? themeColors.dark : themeColors.light;
+  }, [isDarkMode]);
+
+  // Screen options'ı da useMemo ile sarmalayarak optimize edelim
+  const screenOptions = useMemo(() => ({
+    headerStyle: {
+      backgroundColor: colors.background
+    },
+    headerTintColor: colors.text,
+    headerShadowVisible: false
+  }), [colors]);
 
   return (
     <ThemeProvider>
       <View style={{ flex: 1, backgroundColor: colors.background }}>
         <SafeAreaProvider>
           <NavigationContainer>
-            <Stack.Navigator screenOptions={{
-              headerStyle: {
-                backgroundColor: colors.background
-              },
-              headerTintColor: colors.text,
-              headerShadowVisible: false // Header çizgisini kaldırır
-            }}>
+            <Stack.Navigator screenOptions={screenOptions}>
               <Stack.Screen 
                 name="Home" 
                 component={HomeScreen}
                 options={{ 
                   title: '',
-                  headerShown: false // Header'ı tamamen gizler
+                  headerShown: false 
                 }} 
               />
             </Stack.Navigator>

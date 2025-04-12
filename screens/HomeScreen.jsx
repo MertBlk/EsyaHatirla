@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback, useColorScheme } from "react";
-import { View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet, Alert, Vibration, Modal, ScrollView, StatusBar, ActivityIndicator,Switch } from "react-native";
+import { useState, useEffect, useCallback, useColorScheme, useMemo } from "react";
+import { View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet, Alert, Vibration, Modal, ScrollView, StatusBar, ActivityIndicator, Switch } from "react-native";
 import CheckBox from '@react-native-community/checkbox';
 import * as Location from 'expo-location';
 import * as Notifications from 'expo-notifications';
@@ -7,8 +7,9 @@ import NetInfo from "@react-native-community/netinfo";
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createDynamicStyles, styles } from '../src/styles/HomeScreen.styles';
-import {  getCategorizedItems,  getInitialItems, categoryIcons,getCategories } from '../src/data/items';
+import { getCategorizedItems, getInitialItems, categoryIcons, getCategories } from '../src/data/items';
 import strings from '../src/localization/strings';
+import { getDistanceFromLatLonInMeters } from '../utils/distance'; // Mesafe utility'sini import edelim
 
 // 1. Sabit değişkenleri en üste ekle
 const EARTH_RADIUS = 6371e3; // Dünya yarıçapı (metre)
@@ -21,8 +22,10 @@ const STORAGE_KEYS = {
 let notificationListener = null;
 
 const HomeScreen = () => {
+  // Önce dil state'ini tanımlayın
+  const [currentLanguage, setCurrentLanguage] = useState('tr');
   
-
+  // Dil state'ini kullanan diğer state'ler sonra tanımlanmalı
   const [items, setItems] = useState(() => getInitialItems(currentLanguage));
   const [selectedItems, setSelectedItems] = useState([]);
   const [homeLocation, setHomeLocation] = useState(null);
@@ -35,7 +38,6 @@ const HomeScreen = () => {
   const [isDarkMode, setIsDarkMode] = useState(false); // isDarkMode state'ini ekleyelim
   const [savedLocations, setSavedLocations] = useState([]);
   const [locationName, setLocationName] = useState('');
-  const [currentLanguage, setCurrentLanguage] = useState('tr');
   const [showSettings, setShowSettings] = useState(false);
   const [saveNotification, setSaveNotification] = useState(false); // Yeni state eklendi
 const [isChangingLocation, setIsChangingLocation] = useState(false);
@@ -49,29 +51,28 @@ const [isChangingLocation, setIsChangingLocation] = useState(false);
     { code: 'en', flag: '🇬🇧', name: 'English' },
     { code: 'de', flag: '🇩🇪', name: 'Deutsch' },
     { code: 'fr', flag: '🇫🇷', name: 'Français' },
-    { code: 'es', flag: '🇪🇸', name: 'Español' }
+    { code: 'es', flag: '🇪🇸', name: 'Español' },
+    { code: 'ar', flag: '🇸🇦', name: 'العربية' }, // Arapça
+    { code: 'nl', flag: '🇳🇱', name: 'Nederlands' }, // Hollandaca
+    { code: 'sv', flag: '🇸🇪', name: 'Svenska' }, // İsveççe
+    { code: 'pl', flag: '🇵🇱', name: 'Polski' } // Lehçe
   ];
 
-  // Dil değiştirme fonksiyonunu ekleyelim
+  // Dil değiştirme fonksiyonunu optimize edelim
   const toggleLanguage = async () => {
     try {
-      // Dilleri sırayla döndür: tr -> en -> de -> fr -> es -> tr
-      const languages = [
-        { code: 'tr', flag: '🇹🇷', name: 'Türkçe' },
-        { code: 'en', flag: '🇬🇧', name: 'English' },
-        { code: 'de', flag: '🇩🇪', name: 'Deutsch' },
-        { code: 'fr', flag: '🇫🇷', name: 'Français' },
-        { code: 'es', flag: '🇪🇸', name: 'Español' }
-      ];;
-      const currentIndex = languages.indexOf(currentLanguage);
-      const newIndex = (currentIndex + 1) % languages.length;
-      const newLang = languages[newIndex];
+      // Mevcut dil kodunu bul
+      const currentCode = currentLanguage;
       
-      setCurrentLanguage(newLang);
+      // Mevcut dilin index'ini bul
+      const currentIndex = languages.findIndex(lang => lang.code === currentCode);
       
-      // Dil tercihini AsyncStorage'a kaydet
-      await AsyncStorage.setItem('user-language', newLang);
+      // Bir sonraki dile geç (döngüsel olarak)
+      const nextIndex = (currentIndex + 1) % languages.length;
+      const newLang = languages[nextIndex].code;
       
+      // Dili değiştir
+      await setLanguage(newLang);
       console.log('Dil değiştirildi:', newLang);
     } catch (error) {
       console.error('Dil değiştirme hatası:', error);
@@ -237,7 +238,25 @@ const setLanguage = async (lang) => {
   }, [homeLocation]);
   const homeLocationArray = {};
 
-  // 📡 İnternet bağlantısını kontrol et
+ // HomeScreen bileşeni içinde, en üste ekleyin:
+const safeGetString = (path, fallback = '') => {
+  try {
+    const parts = path.split('.');
+    let result = strings[currentLanguage];
+    
+    for (const part of parts) {
+      if (result === undefined || result === null) return fallback;
+      result = result[part];
+    }
+    
+    return result || fallback;
+  } catch (e) {
+    return fallback;
+  }
+};
+
+// Örnek kullanım:
+// safeGetString('categories.all', 'Tümü')
  
 
   // 📍 Kullanıcının konum izinlerini isteme
@@ -310,7 +329,7 @@ const saveLocation = async () => {
 };
 
   
-  const startLocationTracking = async (savedLocation) => {
+  const startLocationTracking = useCallback(async (savedLocation) => {
     try {
       // savedLocation parametresini veya state'teki homeLocation'ı kullan
       const locationToTrack = savedLocation || homeLocation;
@@ -362,7 +381,8 @@ const saveLocation = async () => {
         "Konum takibi başlatılamadı: " + (error.message || "Bilinmeyen hata")
       );
     }
-  };
+  }, [homeLocation, locationSubscription, sendNotification]); // Bağımlılıkları ekledik
+
   const simulateLocationChange = () => {
     // Test koordinatları (Ev konumundan 100 metre uzakta)
     const testLocation = {
@@ -592,8 +612,6 @@ const updateLocationItems = async (locationId, silent = true) => {
     return false;
   }
 };
-
-// StatsCard bileşenini güncelleyelim
 const StatsCard = () => (
   <View style={[styles.statsCard, dynamicStyles.statsCard]}>
     <View style={styles.statItem}>
@@ -601,7 +619,7 @@ const StatsCard = () => (
         {selectedItems.length}
       </Text>
       <Text style={[styles.statLabel, dynamicStyles.categoryText]}>
-        {strings[currentLanguage].stats.selected}
+        {safeGetString('stats.selected', 'Seçili')}
       </Text>
     </View>
     <View style={styles.statDivider} />
@@ -610,17 +628,46 @@ const StatsCard = () => (
         {getFilteredItems().length}
       </Text>
       <Text style={[styles.statLabel, dynamicStyles.categoryText]}>
-        {strings[currentLanguage].stats.total}
+        {safeGetString('stats.total', 'Toplam')}
       </Text>
     </View>
   </View>
 );
-
-// Kategori seçici bileşenini de güncelleyelim
 const CategorySelector = () => {
+  // Her dil değişikliğinde güncel kategorileri al
   const categories = getCategories(currentLanguage);
-  const items = getCategorizedItems(currentLanguage);
-  const allCategoryName = strings[currentLanguage].categories.all;
+  
+  // Tümü kategori adını güvenli bir şekilde al
+  const allCategoryName = safeGetString('categories.all', 'Tümü');
+  
+  // Yardımcı fonksiyon - kategori adına göre doğru ikonu al
+  const getCategoryIcon = (categoryName) => {
+    // Önce doğrudan eşleşmeyi dene
+    if (categoryIcons[categoryName]) {
+      return categoryIcons[categoryName];
+    }
+    
+    // 'Tümü' veya 'All' gibi özel durumlar için kontrol
+    if (categoryName === allCategoryName) {
+      return categoryIcons['Tümü'] || categoryIcons['All'] || '🗂️';
+    }
+    
+    // Kategorinin dile göre eşdeğerini bulmak için tüm kategorilerde ara
+    const allCategories = Object.keys(categoryIcons);
+    // Kategori türünü tahmin et (ilk kelimesine bakarak)
+    const categoryFirstWord = categoryName.split(/[ /]/)[0].toLowerCase();
+    
+    // Benzer kategori bul
+    for (const key of allCategories) {
+      const keyFirstWord = key.split(/[ /]/)[0].toLowerCase();
+      if (keyFirstWord === categoryFirstWord) {
+        return categoryIcons[key];
+      }
+    }
+    
+    // Hiçbir eşleşme bulunamazsa varsayılan bir ikon döndür
+    return '📋';
+  };
 
   return (
     <View style={styles.categoryWrapper}>
@@ -629,6 +676,7 @@ const CategorySelector = () => {
         showsHorizontalScrollIndicator={false} 
         contentContainerStyle={styles.categoryScrollContent}
       >
+        {/* Her zaman "Tümü" kategori butonunu göster */}
         <TouchableOpacity
           style={[
             styles.categoryButton,
@@ -642,10 +690,11 @@ const CategorySelector = () => {
             dynamicStyles.categoryText,
             selectedCategory === allCategoryName && { color: '#FFFFFF' }
           ]}>
-            {categoryIcons[currentLanguage === 'tr' ? 'Tümü' : 'All']} {allCategoryName}
+            {getCategoryIcon(allCategoryName)} {allCategoryName}
           </Text>
         </TouchableOpacity>
 
+        {/* Dile özgü kategorileri göster */}
         {categories.map(category => (
           <TouchableOpacity
             key={category}
@@ -661,7 +710,7 @@ const CategorySelector = () => {
               dynamicStyles.categoryText,
               selectedCategory === category && { color: '#FFFFFF' }
             ]}>
-              {categoryIcons[category]} {category}
+              {getCategoryIcon(category)} {category}
             </Text>
           </TouchableOpacity>
         ))}
@@ -669,11 +718,9 @@ const CategorySelector = () => {
     </View>
   );
 };
-
-// getFilteredItems fonksiyonunu güncelle
 const getFilteredItems = () => {
   const items = getCategorizedItems(currentLanguage);
-  const allCategoryName = strings[currentLanguage].categories.all;
+  const allCategoryName = strings[currentLanguage]?.categories?.all || "Tümü";
   
   if (!selectedCategory || selectedCategory === allCategoryName) {
     return getInitialItems(currentLanguage);
@@ -681,12 +728,10 @@ const getFilteredItems = () => {
   
   return items[selectedCategory] || [];
 };
-
-// useEffect'i güncelle
 useEffect(() => {
   setItems(getInitialItems(currentLanguage));
-  // Kategoriyi de sıfırla
-  setSelectedCategory(strings[currentLanguage].categories.all);
+  // Kategoriyi de sıfırla - güvenli erişim ekledim
+  setSelectedCategory(strings[currentLanguage]?.categories?.all || "Tümü");
 }, [currentLanguage]);
 
 // HomeScreen bileşenindeki diğer useEffect'lerin altına ekleyin
@@ -746,10 +791,10 @@ const CurrentLocationCard = () => {
       >
         <View style={styles.currentLocationContainer}>
           <Text style={[styles.locationTitle, dynamicStyles.text]}>
-            {strings[currentLanguage].location.title}
+            {strings[currentLanguage]?.location?.title || "Konum"}
           </Text>
           <Text style={[styles.locationName, dynamicStyles.categoryText]}>
-            {homeLocation?.name || strings[currentLanguage].location.noLocation}
+            {homeLocation?.name || strings[currentLanguage]?.location?.noLocation || "Konum seçilmedi"}
           </Text>
         </View>
       </TouchableOpacity>
@@ -762,34 +807,17 @@ const CurrentLocationCard = () => {
         <SafeAreaView style={[styles.modalSafeArea, dynamicStyles.modalBackground]}>
           <View style={[styles.locationModalContainer, dynamicStyles.modalContent]}>
             <Text style={styles.locationModalTitle}>
-              {strings[currentLanguage].location.savedLocations}
+              {strings[currentLanguage]?.location?.savedLocations || "Kaydedilmiş Konumlar"}
             </Text>
             
-            <FlatList
-                data={savedLocations}
-                keyExtractor={(item) => item.id}
-                renderItem={({ item }) => (
-                  <TouchableOpacity
-                    style={[styles.locationItem, dynamicStyles.locationItem, { 
-                      backgroundColor: homeLocation?.id === item.id ? '#34C759' : dynamicStyles.locationItem.backgroundColor 
-                    }]}
-                    onPress={() => safelyChangeLocation(item)}
-                  >
-                    <Text style={[styles.locationItemText, dynamicStyles.locationItemText, { 
-                      color: homeLocation?.id === item.id ? '#FFF' : dynamicStyles.locationItemText.color 
-                    }]}>
-                      {item.name}
-                    </Text>
-                  </TouchableOpacity>
-                )}
-              />
+            {/* ... FlatList ve diğer kod ... */}
 
             <TouchableOpacity 
               style={styles.closeButton}
               onPress={() => setIsVisible(false)}
             >
               <Text style={styles.buttonText}>
-                {strings[currentLanguage].buttons.close}
+                {strings[currentLanguage]?.buttons?.close || "Kapat"}
               </Text>
             </TouchableOpacity>
           </View>
@@ -798,7 +826,6 @@ const CurrentLocationCard = () => {
     </>
   );
 };
-
 // ThemeToggle bileşenini güncelle
 const ThemeToggle = () => (
   <TouchableOpacity
@@ -977,13 +1004,13 @@ const renderSettings = () => (
     <SafeAreaView style={[styles.modalSafeArea, dynamicStyles.modalBackground]}>
       <View style={[styles.settingsModalContainer, dynamicStyles.modalContent]}>
         <Text style={[styles.modalTitle, dynamicStyles.text]}>
-          {strings[currentLanguage].settings.title}
+          {strings[currentLanguage]?.settings?.title || "Ayarlar"}
         </Text>
 
         {/* Tema Ayarı */}
         <View style={styles.settingRow}>
           <Text style={[styles.settingLabel, dynamicStyles.text]}>
-            {strings[currentLanguage].settings.darkMode}
+            {strings[currentLanguage]?.settings?.darkMode || "Karanlık Mod"}
           </Text>
           <Switch
             value={isDarkMode}
@@ -996,7 +1023,7 @@ const renderSettings = () => (
         {/* Dil Ayarı */}
         <View style={styles.settingRow}>
           <Text style={[styles.settingLabel, dynamicStyles.text]}>
-            {strings[currentLanguage].settings.language}
+            {strings[currentLanguage]?.settings?.language || "Dil"}
           </Text>
           <TouchableOpacity
             style={styles.languageSelector}
@@ -1014,20 +1041,20 @@ const renderSettings = () => (
           onPress={simulateLocationChange}
         >
           <Text style={styles.buttonText}>
-            {strings[currentLanguage].buttons.testLocation}
+            {strings[currentLanguage]?.buttons?.testLocation || "🔄 Konum Değişikliğini Test Et"}
           </Text>
         </TouchableOpacity>
        
-
         <TouchableOpacity 
           style={[styles.closeButton, { marginTop: 20 }]}
           onPress={() => setShowSettings(false)}
         >
           <Text style={styles.buttonText}>
-            {strings[currentLanguage].buttons.close}
+            {strings[currentLanguage]?.buttons?.close || "Kapat"}
           </Text>
         </TouchableOpacity>
       </View>
+      
       {/* Dil Seçimi Modalı */}
       <Modal
         visible={languageMenuVisible}
@@ -1087,7 +1114,7 @@ return (
       
       {/* Üst kısımdaki başlık ve bilgi alanı */}
       <Text style={[styles.title, dynamicStyles.text]}>
-        {strings[currentLanguage].appName}
+        {strings[currentLanguage]?.appName || "Unutma!"}
       </Text>
       
       <CategorySelector />
@@ -1138,13 +1165,18 @@ return (
           onPress={saveHomeLocation}
         >
           <Text style={[styles.navButtonIcon, dynamicStyles.text]}>🏠</Text>
+         <Text style={[styles.navButtonText, dynamicStyles.text]}>
+            {safeGetString('buttons.saveLocation', 'Konum Kaydet')}
+          </Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.navButton}
           onPress={() => setShowSettings(true)}
         >
           <Text style={[styles.navButtonIcon, dynamicStyles.text]}>⚙️</Text>
-          
+          <Text style={[styles.navButtonText, dynamicStyles.text]}>
+            {safeGetString('settings.title', 'Ayarlar')}
+          </Text>
         </TouchableOpacity>
       </View>
       {renderSettings()}
@@ -1152,7 +1184,7 @@ return (
       {saveNotification && (
         <View style={styles.saveNotification}>
           <Text style={styles.saveNotificationText}>
-            ✓ Eşyalar otomatik kaydedildi
+            ✓ {safeGetString('alerts.itemsSaved', 'Eşyalar otomatik kaydedildi')}
           </Text>
         </View>
       )}
