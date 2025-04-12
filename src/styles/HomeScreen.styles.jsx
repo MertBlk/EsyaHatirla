@@ -572,6 +572,67 @@ export const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '500',
   },
+  // styles.js içine ekleyin
+modalOverlay: {
+  flex: 1,
+  justifyContent: 'center',
+  alignItems: 'center',
+  backgroundColor: 'rgba(0, 0, 0, 0.5)',
+},
+languageModalContainer: {
+  width: '90%',
+  maxHeight: '100%',
+  borderRadius: 12,
+  padding: 16,
+  alignItems: 'center',
+},
+languageListItem: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  paddingVertical: 12,
+  paddingHorizontal: 16,
+  borderRadius: 8,
+  marginVertical: 4,
+  width: '100%',
+  minWidth: 250,
+},
+selectedLanguageItem: {
+  backgroundColor: 'rgba(0, 122, 255, 0.1)',
+},
+languageItemFlag: {
+  fontSize: 24,
+  marginRight: 12,
+},
+languageItemText: {
+  fontSize: 16,
+  flex: 1,
+  flexWrap: 'nowrap',
+  flexShrink: 1,
+  marginRight: 8,
+},
+selectedLanguageText: {
+  fontWeight: 'bold',
+},
+checkmarkText: {
+  fontSize: 16,
+  color: '#007AFF',
+  marginLeft: 8,
+},
+languageSelector: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  padding: 8,
+  borderRadius: 8,
+  borderWidth: 1,
+  borderColor: '#E5E5EA',
+},
+languageSelectText: {
+  marginRight: 8,
+},
+dropdownArrow: {
+  fontSize: 10,
+  color: '#8E8E93',
+},
 });
 
 export default {

@@ -39,11 +39,34 @@ const HomeScreen = () => {
   const [showSettings, setShowSettings] = useState(false);
   const [saveNotification, setSaveNotification] = useState(false); // Yeni state eklendi
 const [isChangingLocation, setIsChangingLocation] = useState(false);
+  
+  // Bu satırı ekleyin - languages ve languageMenuVisible tanımı
+  const [languageMenuVisible, setLanguageMenuVisible] = useState(false);
+  
+  // languages array'ini ana bileşene taşıyın
+  const languages = [
+    { code: 'tr', flag: '🇹🇷', name: 'Türkçe' },
+    { code: 'en', flag: '🇬🇧', name: 'English' },
+    { code: 'de', flag: '🇩🇪', name: 'Deutsch' },
+    { code: 'fr', flag: '🇫🇷', name: 'Français' },
+    { code: 'es', flag: '🇪🇸', name: 'Español' }
+  ];
 
   // Dil değiştirme fonksiyonunu ekleyelim
   const toggleLanguage = async () => {
     try {
-      const newLang = currentLanguage === 'tr' ? 'en' : 'tr';
+      // Dilleri sırayla döndür: tr -> en -> de -> fr -> es -> tr
+      const languages = [
+        { code: 'tr', flag: '🇹🇷', name: 'Türkçe' },
+        { code: 'en', flag: '🇬🇧', name: 'English' },
+        { code: 'de', flag: '🇩🇪', name: 'Deutsch' },
+        { code: 'fr', flag: '🇫🇷', name: 'Français' },
+        { code: 'es', flag: '🇪🇸', name: 'Español' }
+      ];;
+      const currentIndex = languages.indexOf(currentLanguage);
+      const newIndex = (currentIndex + 1) % languages.length;
+      const newLang = languages[newIndex];
+      
       setCurrentLanguage(newLang);
       
       // Dil tercihini AsyncStorage'a kaydet
@@ -54,6 +77,17 @@ const [isChangingLocation, setIsChangingLocation] = useState(false);
       console.error('Dil değiştirme hatası:', error);
     }
   };
+
+  // HomeScreen bileşeninde toggleLanguage fonksiyonunun hemen altına ekleyin
+const setLanguage = async (lang) => {
+  try {
+    setCurrentLanguage(lang);
+    await AsyncStorage.setItem('user-language', lang);
+    console.log('Dil değiştirildi:', lang);
+  } catch (error) {
+    console.error('Dil değiştirme hatası:', error);
+  }
+};
 
   // Uygulama başladığında kaydedilmiş dil tercihini yükle
   useEffect(() => {
@@ -778,16 +812,87 @@ const ThemeToggle = () => (
   </TouchableOpacity>
 );
 
-const LanguageToggle = () => (
-  <TouchableOpacity
-    style={[styles.themeToggleButton]}
-    onPress={toggleLanguage}
-  >
-    <Text style={styles.buttonModeText}>
-      {currentLanguage === 'tr' ? '🇬🇧' : '🇹🇷'}
-    </Text>
-  </TouchableOpacity>
-);
+// LanguageToggle bileşenini güncelleyelim
+const LanguageToggle = () => {
+  const [isLanguageModalOpen, setIsLanguageModalOpen] = useState(false);
+  
+  // languages tanımını kaldırın, ana bileşenden kullanacağız
+
+  return (
+    <>
+      <TouchableOpacity
+        style={[styles.themeToggleButton]}
+        onPress={() => setIsLanguageModalOpen(true)}
+      >
+        <Text style={styles.buttonModeText}>
+          {languages.find(l => l.code === currentLanguage)?.flag || '🌐'}
+        </Text>
+      </TouchableOpacity>
+      
+      {/* Dil seçimi için modal */}
+      <Modal
+        visible={isLanguageModalOpen}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setIsLanguageModalOpen(false)}
+      >
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setIsLanguageModalOpen(false)}
+        >
+          <View 
+            style={[styles.languageModalContainer, dynamicStyles.modalContent]}
+            onStartShouldSetResponder={() => true}
+            onTouchEnd={e => e.stopPropagation()}
+          >
+            <Text style={[styles.modalSubTitle, dynamicStyles.text]}>
+              Dil Seçimi / Language
+            </Text>
+            
+            <FlatList
+              data={languages}
+              keyExtractor={(item) => item.code}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  style={[
+                    styles.languageListItem,
+                    currentLanguage === item.code && styles.selectedLanguageItem
+                  ]}
+                  onPress={() => {
+                    setLanguage(item.code);
+                    setIsLanguageModalOpen(false);
+                  }}
+                >
+                  <Text style={styles.languageItemFlag}>{item.flag}</Text>
+                  <Text style={[
+                    styles.languageItemText, 
+                    dynamicStyles.text,
+                    currentLanguage === item.code && styles.selectedLanguageText
+                  ]}>
+                    {item.name}
+                  </Text>
+                  {currentLanguage === item.code && (
+                    <Text style={styles.checkmarkText}>✓</Text>
+                  )}
+                </TouchableOpacity>
+              )}
+            />
+            
+            <TouchableOpacity
+              style={styles.closeButton}
+              onPress={() => setIsLanguageModalOpen(false)}
+            >
+              <Text style={styles.buttonText}>
+                {strings[currentLanguage].buttons.close}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
+    </>
+  );
+};
 
 const dynamicStyles = createDynamicStyles(isDarkMode);
 
@@ -893,16 +998,17 @@ const renderSettings = () => (
           <Text style={[styles.settingLabel, dynamicStyles.text]}>
             {strings[currentLanguage].settings.language}
           </Text>
-          {/* Dinamik stil eklendi */}
           <TouchableOpacity
-            style={[styles.languageButton, dynamicStyles.languageButton]}
-            onPress={toggleLanguage}
+            style={styles.languageSelector}
+            onPress={() => setLanguageMenuVisible(true)}
           >
-            <Text style={[styles.languageButtonText, dynamicStyles.text]}>
-              {currentLanguage === 'tr' ? '🇹🇷 Türkçe' : '🇬🇧 English'}
+            <Text style={[styles.languageSelectText, dynamicStyles.text]}>
+              {languages.find(l => l.code === currentLanguage)?.flag} {languages.find(l => l.code === currentLanguage)?.name}
             </Text>
+            <Text style={styles.dropdownArrow}>▼</Text>
           </TouchableOpacity>
         </View>
+
         <TouchableOpacity 
           style={[styles.homeButton, { backgroundColor: '#007AFF' }]} 
           onPress={simulateLocationChange}
@@ -922,6 +1028,54 @@ const renderSettings = () => (
           </Text>
         </TouchableOpacity>
       </View>
+      {/* Dil Seçimi Modalı */}
+      <Modal
+        visible={languageMenuVisible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setLanguageMenuVisible(false)}
+      >
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setLanguageMenuVisible(false)}
+        >
+          <View 
+            style={[styles.languageModalContainer, dynamicStyles.modalContent]}
+            onStartShouldSetResponder={() => true}
+            onTouchEnd={e => e.stopPropagation()}
+          >
+            <FlatList
+              data={languages}
+              keyExtractor={(item) => item.code}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  style={[
+                    styles.languageListItem,
+                    currentLanguage === item.code && styles.selectedLanguageItem
+                  ]}
+                  onPress={() => {
+                    setLanguage(item.code);
+                    setLanguageMenuVisible(false);
+                  }}
+                >
+                  <Text style={styles.languageItemFlag}>{item.flag}</Text>
+                  <Text style={[
+                    styles.languageItemText, 
+                    dynamicStyles.text,
+                    currentLanguage === item.code && styles.selectedLanguageText
+                  ]}>
+                    {item.name}
+                  </Text>
+                  {currentLanguage === item.code && (
+                    <Text style={styles.checkmarkText}>✓</Text>
+                  )}
+                </TouchableOpacity>
+              )}
+            />
+          </View>
+        </TouchableOpacity>
+      </Modal>
     </SafeAreaView>
   </Modal>
 );
