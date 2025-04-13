@@ -149,23 +149,25 @@ export const styles = StyleSheet.create({
     marginBottom: 12,
   },
   categoryWrapper: {
-    height: 40,
-    marginBottom:6,
+    height: 80, // Yüksekliği artırıyorum
+    marginBottom: 6,
   },
   categoryScrollContent: {
-    alignItems: 'center',
-    paddingVertical: 10,
+    paddingVertical: 4, // İçerik padding'ini azaltıyorum
+    flexDirection: 'row', // Yatay düzen
+    alignItems: 'center', // İçeriği dikeyde ortala
+    height: 50, // Sabit yükseklik
   },
   categoryContainer: {
-    height: 40,
+    height: 60, // 40'tan 50'ye çıkarıyorum
     marginBottom: 8,
     paddingVertical: 0,    
   },
   categoryButton: {
-    width: 100,
-    height: 36,
+    minWidth: 100, 
+    height: 42, 
     marginRight: 8,
-    borderRadius: 18,
+    borderRadius: 21, 
     backgroundColor: colors.dark.surface, // Koyu kart rengi
     borderWidth: 1,
     borderColor: colors.dark.border, // Koyu kenarlık
@@ -176,6 +178,7 @@ export const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 2,
     elevation: 2,
+    paddingHorizontal: 12, // Yatay padding ekliyorum
   },
   selectedCategoryButton: {
     backgroundColor: colors.common.primary,
@@ -185,6 +188,9 @@ export const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '500',
     color: colors.dark.textSecondary, // Açık gri yazı
+    textAlign: 'center', // Metni ortalıyorum
+    height: 20, // Metin için sabit yükseklik
+    lineHeight: 20, // Metin satır yüksekliği
   },
   selectedCategoryText: {
     color: colors.dark.text,
@@ -412,6 +418,9 @@ export const styles = StyleSheet.create({
   currentLocationContainer: {
     flex: 1,
     padding: 8,
+    height: 60, // Sabit yükseklik
+    justifyContent: 'center', // Dikey ortalama
+    alignItems: 'flex-start', // Yatay hizalama
   },
   locationTitle: {
     fontSize: 16,

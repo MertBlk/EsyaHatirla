@@ -1,35 +1,33 @@
-import React, { createContext, useContext, useState, useMemo } from 'react';
+import React, { createContext, useContext } from 'react';
 
-const ThemeContext = createContext();
+// Tema Bağlam API'si
+const ThemeContext = createContext({
+  isDark: true,
+  toggleTheme: () => {},
+  setIsDarkMode: () => {},
+  colors: {}
+});
 
-export const ThemeProvider = ({ children }) => {
-  const [isDark, setIsDark] = useState(true);
-
-  // useMemo ile theme objesinin gereksiz yere yeniden oluşturulmasını engelliyoruz
-  const theme = useMemo(() => ({
-    dark: {
-      background: '#1C1C1E',
-      surface: '#2C2C2E',
-      text: '#FFFFFF',
-      textSecondary: '#EBEBF5',
-      border: '#3A3A3C'
-    },
-    light: {
-      background: '#F2F2F7',
-      surface: '#FFFFFF',
-      text: '#000000',
-      textSecondary: '#666666',
-      border: '#E5E5EA'
-    },
-    toggleTheme: () => setIsDark(!isDark),
-    isDark
-  }), [isDark]); // Sadece isDark değiştiğinde yeniden hesapla
-
+export const ThemeProvider = ({ value, children }) => {
   return (
-    <ThemeContext.Provider value={theme}>
+    <ThemeContext.Provider value={value || {
+      isDark: true,
+      toggleTheme: () => {},
+      setIsDarkMode: () => {},
+      colors: {}
+    }}>
       {children}
     </ThemeContext.Provider>
   );
 };
 
-export const useTheme = () => useContext(ThemeContext);
+// Tema kancası - bileşenlerde tema değişkenlerine kolayca erişim sağlar
+export const useTheme = () => {
+  const context = useContext(ThemeContext);
+  
+  if (context === undefined) {
+    throw new Error('useTheme must be used within a ThemeProvider');
+  }
+  
+  return context;
+};

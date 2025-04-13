@@ -1,17 +1,29 @@
-import React, { memo, useMemo } from 'react';
+import React, { memo, useMemo, useCallback } from 'react';
 import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
 import { getCategories, categoryIcons } from '../../src/data/items';
 import { styles } from '../../src/styles/HomeScreen.styles';
 
-const CategoryButton = memo(({ category, isSelected, onPress, isDarkMode, categoryIcon }) => (
+const CategoryButton = memo(({ 
+  category, 
+  isSelected, 
+  onPress, 
+  isDarkMode, 
+  categoryIcon 
+}) => (
   <TouchableOpacity
     style={[
       styles.categoryButton,
-      { backgroundColor: isDarkMode ? '#2C2C2E' : '#FFFFFF', 
+      { backgroundColor: isDarkMode ? '#2C2E' : '#FFFFFF', 
         borderColor: isDarkMode ? '#3A3A3C' : '#E5E5EA' },
       isSelected && { backgroundColor: '#007AFF', borderColor: '#007AFF' }
     ]}
     onPress={onPress}
+    accessibilityLabel={category}
+    accessibilityRole="button"
+    accessibilityState={{ selected: isSelected }}
+    accessibilityHint={isSelected ? 
+      `${category} kategorisi seçili, başka bir kategori seçmek için dokunun` : 
+      `${category} kategorisini seçmek için dokunun`}
   >
     <Text style={[
       styles.categoryButtonText,
@@ -23,40 +35,76 @@ const CategoryButton = memo(({ category, isSelected, onPress, isDarkMode, catego
   </TouchableOpacity>
 ));
 
-const CategorySelector = memo(({ currentLanguage, selectedCategory, setSelectedCategory, safeGetString, isDarkMode }) => {
+// Kategori ikonları için eşleme tablosu
+const CATEGORY_ICONS_MAP = {
+  tr: { 
+    'Tümü': '🗂️',
+    'Günlük': '🔑', 
+    'İş/Okul': '📚', 
+    'Spor': '🏀', 
+    'Seyahat': '✈️', 
+    'Sağlık': '💊', 
+    'Elektronik': '📱' 
+  },
+  en: { 
+    'All': '🗂️',
+    'Daily': '🔑', 
+    'Work/School': '📚', 
+    'Sports': '🏀', 
+    'Travel': '✈️', 
+    'Health': '💊', 
+    'Electronics': '📱' 
+  },
+  default: '📁'
+};
+
+const CategorySelector = memo(({ 
+  currentLanguage, 
+  selectedCategory, 
+  setSelectedCategory, 
+  safeGetString, 
+  isDarkMode 
+}) => {
   // Her dil değişikliğinde güncel kategorileri al
-  const categories = useMemo(() => getCategories(currentLanguage), [currentLanguage]);
+  const categories = useMemo(() => 
+    getCategories(currentLanguage), 
+    [currentLanguage]
+  );
   
   // Tümü kategori adını güvenli bir şekilde al
-  const allCategoryName = safeGetString('categories.all', 'Tümü');
+  const allCategoryName = useMemo(() => 
+    safeGetString('categories.all', 'Tümü'), 
+    [safeGetString]
+  );
   
   // Yardımcı fonksiyon - kategori adına göre doğru ikonu al
-  const getCategoryIcon = (categoryName) => {
+  const getCategoryIcon = useCallback((categoryName) => {
     // Önce doğrudan eşleşmeyi dene
     if (categoryIcons[categoryName]) {
       return categoryIcons[categoryName];
     }
     
     // 'Tümü' veya 'All' gibi özel durumlar için kontrol
-    if (categoryName === 'Tümü' || categoryName === 'All' || 
-        categoryName === safeGetString('categories.all', 'Tümü')) {
+    if (categoryName === allCategoryName || 
+        categoryName === 'Tümü' || 
+        categoryName === 'All') {
       return '🗂️';
     }
     
-    // Dile özgü eşleşmeleri kontrol et
-    const languageSpecificIcons = {
-      tr: { 'Günlük': '🔑', 'İş/Okul': '📚', 'Spor': '🏀', 'Seyahat': '✈️', 'Sağlık': '💊', 'Elektronik': '📱' },
-      en: { 'Daily': '🔑', 'Work/School': '📚', 'Sports': '🏀', 'Travel': '✈️', 'Health': '💊', 'Electronics': '📱' }
-    };
-    
-    // Dile özgü ikonları kontrol et
-    if (languageSpecificIcons[currentLanguage] && languageSpecificIcons[currentLanguage][categoryName]) {
-      return languageSpecificIcons[currentLanguage][categoryName];
+    // Dil tabanlı kategori ikonu al
+    if (CATEGORY_ICONS_MAP[currentLanguage] && 
+        CATEGORY_ICONS_MAP[currentLanguage][categoryName]) {
+      return CATEGORY_ICONS_MAP[currentLanguage][categoryName];
     }
     
-    // Uygun ikon bulunamazsa varsayılan olarak klasör ikonu kullan
-    return '📁';
-  };
+    // Varsayılan ikon
+    return CATEGORY_ICONS_MAP.default;
+  }, [currentLanguage, allCategoryName]);
+  
+  // Kategori seçme işleyicisi
+  const handleCategorySelect = useCallback((category) => {
+    setSelectedCategory(category);
+  }, [setSelectedCategory]);
 
   return (
     <ScrollView
@@ -64,12 +112,13 @@ const CategorySelector = memo(({ currentLanguage, selectedCategory, setSelectedC
       showsHorizontalScrollIndicator={false}
       style={styles.categoryWrapper}
       contentContainerStyle={styles.categoryScrollContent}
+      accessibilityLabel="Kategori seçimi"
     >
       {/* Her zaman "Tümü" kategori butonunu göster */}
       <CategoryButton
         category={allCategoryName}
         isSelected={selectedCategory === allCategoryName}
-        onPress={() => setSelectedCategory(allCategoryName)}
+        onPress={() => handleCategorySelect(allCategoryName)}
         isDarkMode={isDarkMode}
         categoryIcon={getCategoryIcon(allCategoryName)}
       />
@@ -80,7 +129,7 @@ const CategorySelector = memo(({ currentLanguage, selectedCategory, setSelectedC
           key={category}
           category={category}
           isSelected={selectedCategory === category}
-          onPress={() => setSelectedCategory(category)}
+          onPress={() => handleCategorySelect(category)}
           isDarkMode={isDarkMode}
           categoryIcon={getCategoryIcon(category)}
         />
