@@ -5,13 +5,9 @@ import strings from '../localization/strings';
 export const languages = [
   { code: 'tr', flag: '🇹🇷', name: 'Türkçe' },
   { code: 'en', flag: '🇬🇧', name: 'English' },
-  { code: 'de', flag: '🇩🇪', name: 'Deutsch' },
-  { code: 'fr', flag: '🇫🇷', name: 'Français' },
-  { code: 'es', flag: '🇪🇸', name: 'Español' },
-  { code: 'ar', flag: '🇸🇦', name: 'العربية' }, // Arapça
-  { code: 'nl', flag: '🇳🇱', name: 'Nederlands' }, // Hollandaca
-  { code: 'sv', flag: '🇸🇪', name: 'Svenska' }, // İsveççe
-  { code: 'pl', flag: '🇵🇱', name: 'Polski' } // Lehçe
+  { code: 'ar', flag: '🇸🇦', name: 'العربية' },
+  { code: 'ja', flag: '🇯🇵', name: '日本語' },
+  { code: 'zh', flag: '🇨🇳', name: '中文' }
 ];
 
 export default function useLanguage() {
