@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo, memo } from "react";
-import { View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet, Alert, Vibration, Modal, ScrollView, StatusBar, ActivityIndicator, Switch } from "react-native";
+import { View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet, Alert, Vibration, Modal, ScrollView, StatusBar, ActivityIndicator, Switch, Pressable } from "react-native";
 import CheckBox from '@react-native-community/checkbox';
 import * as Location from 'expo-location';
 import * as Notifications from 'expo-notifications';
@@ -197,246 +197,291 @@ const LanguageSelectionModal = memo(({
 ));
 
 const HomeScreen = () => {
-  const { 
-    currentLanguage, setLanguage, toggleLanguage, safeGetString, languages 
-  } = useLanguage();
-  
-  // Diğer state'ler 
-  const [items, setItems] = useState(() => getInitialItems(currentLanguage));
-  const [selectedItems, setSelectedItems] = useState([]);
-  const [isModalVisible, setModalVisible] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('Tümü');
-  const [isLoading, setIsLoading] = useState(false);
-  const [isDarkMode, setIsDarkMode] = useState(false);
-  const [locationName, setLocationName] = useState('');
-  const [showSettings, setShowSettings] = useState(false);
-  const [saveNotification, setSaveNotification] = useState(false);
-  const [languageMenuVisible, setLanguageMenuVisible] = useState(false);
-  
-  // Konum takibi kancasını kullan
-  const locationTracking = useLocationTracking(strings, currentLanguage, selectedItems);
-  
-  const {
-    homeLocation, setHomeLocation,
-    savedLocations, setSavedLocations,
-    isTracking, isChangingLocation, 
-    setIsChangingLocation, saveLocation,
-    simulateLocationChange, updateLocationItems
-  } = locationTracking;
-
-  // Bildirim ayarlarını kurma
-  useEffect(() => {
-    notificationManager.setupNotifications(currentLanguage);
-  }, [currentLanguage]);
-
-  // Filtreleme işlevi için getFilteredItems fonksiyonu
-  const getFilteredItems = useCallback(() => {
-    // Seçilen kategoriye göre eşyaları filtrele
-    const categorizedItems = getCategorizedItems(currentLanguage);
+  try {
+    const { 
+      currentLanguage, setLanguage, toggleLanguage, safeGetString, languages 
+    } = useLanguage();
     
-    let filteredItems = [];
+    // Diğer state'ler 
+    const [items, setItems] = useState(() => getInitialItems(currentLanguage));
+    const [selectedItems, setSelectedItems] = useState([]);
+    const [isModalVisible, setModalVisible] = useState(false);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [selectedCategory, setSelectedCategory] = useState('Tümü');
+    const [isLoading, setIsLoading] = useState(false);
+    const [isDarkMode, setIsDarkMode] = useState(false);
+    const [locationName, setLocationName] = useState('');
+    const [showSettings, setShowSettings] = useState(false);
+    const [saveNotification, setSaveNotification] = useState(false);
+    const [languageMenuVisible, setLanguageMenuVisible] = useState(false);
     
-    // Tümü kategorisi seçiliyse tüm kategorilerdeki eşyaları göster
-    if (selectedCategory === 'Tümü' || selectedCategory === 'All' || 
-        selectedCategory === safeGetString('categories.all', 'Tümü')) {
-      // Tüm kategorilerdeki eşyaları düzleştir
-      Object.values(categorizedItems).forEach(categoryItems => {
-        filteredItems = [...filteredItems, ...categoryItems];
+    // Konum takibi kancasını kullan
+    const locationTracking = useLocationTracking(strings, currentLanguage, selectedItems);
+    
+    const {
+      homeLocation, setHomeLocation,
+      savedLocations, setSavedLocations,
+      isTracking, isChangingLocation, 
+      setIsChangingLocation, saveLocation,
+      simulateLocationChange, updateLocationItems
+    } = locationTracking;
+
+    // Bildirim ayarlarını kurma
+    useEffect(() => {
+      try {
+        notificationManager.setupNotifications(currentLanguage)
+          .catch(error => {});
+      } catch (error) {}
+    }, [currentLanguage]);
+
+    // Filtreleme işlevi için getFilteredItems fonksiyonu
+    const getFilteredItems = useCallback(() => {
+      // Seçilen kategoriye göre eşyaları filtrele
+      const categorizedItems = getCategorizedItems(currentLanguage);
+      
+      let filteredItems = [];
+      
+      // Tümü kategorisi seçiliyse tüm kategorilerdeki eşyaları göster
+      if (selectedCategory === 'Tümü' || selectedCategory === 'All' || 
+          selectedCategory === safeGetString('categories.all', 'Tümü')) {
+        // Tüm kategorilerdeki eşyaları düzleştir
+        Object.values(categorizedItems).forEach(categoryItems => {
+          filteredItems = [...filteredItems, ...categoryItems];
+        });
+      } else {
+        // Belirli bir kategori seçilmişse sadece o kategorideki eşyaları göster
+        filteredItems = categorizedItems[selectedCategory] || [];
+      }
+      
+      // Arama filtresi uygulandıysa, eşyaları filtrele
+      if (searchQuery) {
+        const lowerQuery = searchQuery.toLowerCase();
+        filteredItems = filteredItems.filter(item =>
+          item.toLowerCase().includes(lowerQuery)
+        );
+      }
+      
+      return filteredItems;
+    }, [currentLanguage, selectedCategory, searchQuery, safeGetString]);
+
+    // useEffect içindeki bildirim dinleyicisini düzenle
+    useEffect(() => {
+      const subscription = Notifications.addNotificationResponseReceivedListener(async (response) => {
+        const { actionIdentifier, notification } = response;
+        const notificationLang = notification.request.content.data?.language || currentLanguage;
+        const itemsList = selectedItems.length > 0 
+          ? `${selectedItems.join('\n• ')}` 
+          : strings[notificationLang].alerts.noItems;
+  
+        if (actionIdentifier === 'yes') {
+          await notificationManager.send({
+            content: {
+              title: strings[notificationLang].alerts.confirm,
+              body: strings[notificationLang].alerts.itemsConfirmed,
+              sound: 'default',
+              data: { language: notificationLang }
+            },
+            trigger: null
+          });
+        } else if (actionIdentifier === 'no') {
+          Vibration.vibrate([1000, 500, 1000]);
+          await notificationManager.send({
+            content: {
+              title: strings[notificationLang].alerts.forgot,
+              body: `${strings[notificationLang].alerts.goBack}\n• ${itemsList}`,
+              sound: 'default',
+              priority: 'high',
+              data: { language: notificationLang }
+            },
+            trigger: null
+          });
+        }
       });
-    } else {
-      // Belirli bir kategori seçilmişse sadece o kategorideki eşyaları göster
-      filteredItems = categorizedItems[selectedCategory] || [];
-    }
+  
+      return () => subscription.remove();
+    }, [selectedItems, currentLanguage]); // Bağımlılık dizisini düzeltme
+  
+    // Dinamik stilleri oluştur
+    const dynamicStyles = useMemo(() => createDynamicStyles(isDarkMode), [isDarkMode]);
+  
+    // useCallback ile performans iyileştirmesi
+    const toggleItem = useCallback((item) => {
+      setSelectedItems(prev => {
+        const newItems = prev.includes(item) 
+          ? prev.filter(i => i !== item) 
+          : [...prev, item];
+        
+        // Ev konumu varsa, eşyaları hemen güncelle
+        if (homeLocation) {
+          // Konum güncelleme işleminde olduğumuzu belirt
+          setIsChangingLocation(true);
+          
+          // Eşyaları güncelle (sessizce) ve işlem tamamlandığında flag'i kaldır
+          updateLocationItems(homeLocation.id, true)
+            .then(() => {
+              setIsChangingLocation(false);
+            })
+            .catch((error) => {
+              setIsChangingLocation(false);
+            });
+        }
+        
+        return newItems;
+      });
+    }, [homeLocation, updateLocationItems, setIsChangingLocation]);
     
-    // Arama filtresi uygulandıysa, eşyaları filtrele
-    if (searchQuery) {
-      const lowerQuery = searchQuery.toLowerCase();
-      filteredItems = filteredItems.filter(item =>
-        item.toLowerCase().includes(lowerQuery)
-      );
-    }
-    
-    return filteredItems;
-  }, [currentLanguage, selectedCategory, searchQuery, safeGetString]);
-
-  // useEffect içindeki bildirim dinleyicisini düzenle
-  useEffect(() => {
-    const subscription = Notifications.addNotificationResponseReceivedListener(async (response) => {
-      const { actionIdentifier, notification } = response;
-      const notificationLang = notification.request.content.data?.language || currentLanguage;
-      const itemsList = selectedItems.length > 0 
-        ? `${selectedItems.join('\n• ')}` 
-        : strings[notificationLang].alerts.noItems;
-
-      if (actionIdentifier === 'yes') {
-        await notificationManager.send({
-          content: {
-            title: strings[notificationLang].alerts.confirm,
-            body: strings[notificationLang].alerts.itemsConfirmed,
-            sound: 'default',
-            data: { language: notificationLang }
-          },
-          trigger: null
-        });
-      } else if (actionIdentifier === 'no') {
-        Vibration.vibrate([1000, 500, 1000]);
-        await notificationManager.send({
-          content: {
-            title: strings[notificationLang].alerts.forgot,
-            body: `${strings[notificationLang].alerts.goBack}\n• ${itemsList}`,
-            sound: 'default',
-            priority: 'high',
-            data: { language: notificationLang }
-          },
-          trigger: null
-        });
-      }
-    });
-
-    return () => subscription.remove();
-  }, [selectedItems, currentLanguage]); // Bağımlılık dizisini düzeltme
-
-  // Dinamik stilleri oluştur
-  const dynamicStyles = useMemo(() => createDynamicStyles(isDarkMode), [isDarkMode]);
-
-  // useCallback ile performans iyileştirmesi
-  const toggleItem = useCallback((item) => {
-    setSelectedItems(prev => {
-      const newItems = prev.includes(item) 
-        ? prev.filter(i => i !== item) 
-        : [...prev, item];
-      
-      // Ev konumu varsa, eşyaları hemen güncelle
-      if (homeLocation) {
-        // Konum güncelleme işleminde olduğumuzu belirt
-        setIsChangingLocation(true);
-        
-        // Eşyaları güncelle (sessizce) ve işlem tamamlandığında flag'i kaldır
-        updateLocationItems(homeLocation.id, true)
-          .then(() => setIsChangingLocation(false))
-          .catch(() => setIsChangingLocation(false));
-      }
-      
-      return newItems;
-    });
-  }, [homeLocation, updateLocationItems, setIsChangingLocation]);
-
-  return (
-    <SafeAreaView style={[styles.safeArea, dynamicStyles.safeArea]}>
-      <View style={[styles.container, dynamicStyles.container, { paddingBottom: 70 }]}>
-        <StatusBar barStyle={isDarkMode ? "light-content" : "dark-content"} />
-        
-        {/* Üst kısımdaki başlık ve bilgi alanı */}
-        <Text style={[styles.title, dynamicStyles.text]}>
-          {safeGetString('appName', 'Unutma!')}
-        </Text>
-        
-        {/* Kategori seçici bileşeni */}
-        <CategorySelector 
-          currentLanguage={currentLanguage}
-          selectedCategory={selectedCategory}
-          setSelectedCategory={setSelectedCategory}
-          safeGetString={safeGetString}
-          isDarkMode={isDarkMode}
-        />
-        
-        {/* İstatistik kartı bileşeni */}
-        <StatsCard 
-          selectedItems={selectedItems}
-          getFilteredItems={getFilteredItems}
-          safeGetString={safeGetString}
-          isDarkMode={isDarkMode}
-        />
-        
-        {/* Mevcut konum kartı bileşeni */}
-        <CurrentLocationCard 
-          homeLocation={homeLocation}
-          strings={strings}
-          currentLanguage={currentLanguage}
-          isDarkMode={isDarkMode}
-          savedLocations={savedLocations}
-          setSavedLocations={setSavedLocations}
-          setIsChangingLocation={setIsChangingLocation}
-          setSelectedItems={setSelectedItems}
-          setHomeLocation={setHomeLocation}
-        />
-        
-        {/* Eşya listesi */}
-        <FlatList
-          data={getFilteredItems()}
-          contentContainerStyle={{ paddingBottom: 60 }}
-          // Optimize edilmiş FlatList ayarları
-          removeClippedSubviews={true}
-          initialNumToRender={10}
-          maxToRenderPerBatch={5}
-          updateCellsBatchingPeriod={50}
-          windowSize={5}
-          getItemLayout={(data, index) => (
-            {length: 60, offset: 60 * index, index}
+    return (
+      <SafeAreaView style={[styles.safeArea, dynamicStyles.safeArea]}>
+        <View style={[styles.container, dynamicStyles.container, { paddingBottom: 70 }]}>
+          <StatusBar barStyle={isDarkMode ? "light-content" : "dark-content"} />
+          
+          {/* Üst kısımdaki başlık ve bilgi alanı */}
+          <Text style={[styles.title, dynamicStyles.text]}>
+            {safeGetString('appName', 'Unutma!')}
+          </Text>
+          
+          {/* Kategori seçici bileşeni */}
+          <CategorySelector 
+            currentLanguage={currentLanguage}
+            selectedCategory={selectedCategory}
+            setSelectedCategory={setSelectedCategory}
+            safeGetString={safeGetString}
+            isDarkMode={isDarkMode}
+          />
+          
+          {/* İstatistik kartı bileşeni */}
+          <StatsCard 
+            selectedItems={selectedItems}
+            getFilteredItems={getFilteredItems}
+            safeGetString={safeGetString}
+            isDarkMode={isDarkMode}
+          />
+          
+          {/* Mevcut konum kartı bileşeni */}
+          <CurrentLocationCard 
+            homeLocation={homeLocation}
+            strings={strings}
+            currentLanguage={currentLanguage}
+            isDarkMode={isDarkMode}
+            savedLocations={savedLocations}
+            setSavedLocations={setSavedLocations}
+            setIsChangingLocation={setIsChangingLocation}
+            setSelectedItems={setSelectedItems}
+            setHomeLocation={setHomeLocation}
+          />
+          
+          {/* Eşya listesi */}
+          <FlatList
+            data={getFilteredItems()}
+            contentContainerStyle={{ paddingBottom: 60 }}
+            // Optimize edilmiş FlatList ayarları
+            removeClippedSubviews={true}
+            initialNumToRender={10}
+            maxToRenderPerBatch={5}
+            updateCellsBatchingPeriod={50}
+            windowSize={5}
+            getItemLayout={(data, index) => (
+              {length: 60, offset: 60 * index, index}
+            )}
+            keyExtractor={(item, index) => `item-${index}-${item.substring(0,3)}`}
+            renderItem={({ item }) => (
+              <ItemComponent 
+                item={item}
+                selectedItems={selectedItems}
+                toggleItem={toggleItem}
+                isDarkMode={isDarkMode}
+                dynamicStyles={dynamicStyles}
+              />
+            )}
+          />
+          
+          {/* Yükleme göstergesi */}
+          {isLoading && (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color="#007AFF" />
+            </View>
           )}
-          keyExtractor={(item, index) => `item-${index}-${item.substring(0,3)}`}
-          renderItem={({ item }) => (
-            <ItemComponent 
-              item={item}
-              selectedItems={selectedItems}
-              toggleItem={toggleItem}
-              isDarkMode={isDarkMode}
-              dynamicStyles={dynamicStyles}
-            />
-          )}
-        />
-        
-        {/* Yükleme göstergesi */}
-        {isLoading && (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color="#007AFF" />
+
+          {/* Alt Menü */}
+          <View style={[styles.bottomNav, dynamicStyles.bottomNav]}>
+            <Pressable
+              style={styles.navButton}
+              onPress={() => {
+                try {
+                  saveLocation();
+                } catch (error) {}
+              }}
+              accessibilityLabel="Konum Kaydet"
+            >
+              <Text style={[styles.navButtonIcon, dynamicStyles.text]}>🏠</Text>
+              <Text style={[styles.navButtonText, dynamicStyles.text]}>
+                {safeGetString('buttons.saveLocation', 'Konum Kaydet')}
+              </Text>
+            </Pressable>
+            <Pressable
+              style={styles.navButton}
+              onPress={() => {
+                setShowSettings(true);
+              }}
+              accessibilityLabel="Ayarlar"
+            >
+              <Text style={[styles.navButtonIcon, dynamicStyles.text]}>⚙️</Text>
+              <Text style={[styles.navButtonText, dynamicStyles.text]}>
+                {safeGetString('settings.title', 'Ayarlar')}
+              </Text>
+            </Pressable>
           </View>
-        )}
-
-        {/* Alt Menü */}
-        <View style={[styles.bottomNav, dynamicStyles.bottomNav]}>
-          <TouchableOpacity
-            style={styles.navButton}
-            onPress={saveLocation}
-            accessibilityLabel="Konum Kaydet"
-            accessibilityRole="button"
+          
+          {/* Ayarlar modalı */}
+          <SettingsModal
+            visible={showSettings}
+            onClose={() => {
+              setShowSettings(false);
+            }}
+            isDarkMode={isDarkMode}
+            setIsDarkMode={setIsDarkMode}
+            currentLanguage={currentLanguage}
+            languages={languages}
+            setLanguage={setLanguage}
+            languageMenuVisible={languageMenuVisible}
+            setLanguageMenuVisible={setLanguageMenuVisible}
+            simulateLocationChange={simulateLocationChange}
+            safeGetString={safeGetString}
+          />
+        </View>
+      </SafeAreaView>
+    );
+  } catch (error) {
+    // Hata durumunda basit bir UI göster
+    return (
+      <SafeAreaView style={{ flex: 1, backgroundColor: '#fff' }}>
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 }}>
+          <Text style={{ fontSize: 18, marginBottom: 20, textAlign: 'center' }}>
+            Uygulama yüklenirken bir hata oluştu
+          </Text>
+          <Text style={{ color: 'red', textAlign: 'center' }}>
+            {error.toString()}
+          </Text>
+          <TouchableOpacity 
+            style={{ 
+              marginTop: 30,
+              padding: 15, 
+              backgroundColor: '#007AFF', 
+              borderRadius: 8 
+            }}
+            onPress={() => {
+              try {
+                Alert.alert('Yeniden başlatılıyor');
+                // Burada yeniden başlatma veya sıfırlama mantığı olabilir
+              } catch (e) {}
+            }}
           >
-            <Text style={[styles.navButtonIcon, dynamicStyles.text]}>🏠</Text>
-            <Text style={[styles.navButtonText, dynamicStyles.text]}>
-              {safeGetString('buttons.saveLocation', 'Konum Kaydet')}
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.navButton}
-            onPress={() => setShowSettings(true)}
-            accessibilityLabel="Ayarlar"
-            accessibilityRole="button"
-          >
-            <Text style={[styles.navButtonIcon, dynamicStyles.text]}>⚙️</Text>
-            <Text style={[styles.navButtonText, dynamicStyles.text]}>
-              {safeGetString('settings.title', 'Ayarlar')}
-            </Text>
+            <Text style={{ color: '#fff' }}>Yeniden Dene</Text>
           </TouchableOpacity>
         </View>
-        
-        {/* Ayarlar modalı */}
-        <SettingsModal
-          visible={showSettings}
-          onClose={() => setShowSettings(false)}
-          isDarkMode={isDarkMode}
-          setIsDarkMode={setIsDarkMode}
-          currentLanguage={currentLanguage}
-          languages={languages}
-          setLanguage={setLanguage}
-          languageMenuVisible={languageMenuVisible}
-          setLanguageMenuVisible={setLanguageMenuVisible}
-          simulateLocationChange={simulateLocationChange}
-          safeGetString={safeGetString}
-        />
-      </View>
-    </SafeAreaView>
-  );
+      </SafeAreaView>
+    );
+  }
 };
 
 export default HomeScreen;

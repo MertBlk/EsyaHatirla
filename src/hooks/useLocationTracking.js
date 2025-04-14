@@ -1,9 +1,11 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import * as Location from 'expo-location';
-import { Alert, Vibration } from 'react-native';
+import { Alert, Vibration, Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getDistanceFromLatLonInMeters } from '../../utils/distance';
 import notificationManager from '../utils/notificationManager';
+
+console.log('useLocationTracking.js dosyası yükleniyor');
 
 // Sabit değişkenleri tanımla
 const STORAGE_KEYS = {
@@ -15,202 +17,396 @@ const STORAGE_KEYS = {
 const MIN_DISTANCE = 50;
 
 export default function useLocationTracking(strings, currentLanguage, selectedItems) {
+  console.log('useLocationTracking hook başladı');
+  
   const [homeLocation, setHomeLocation] = useState(null);
   const [savedLocations, setSavedLocations] = useState([]);
   const [locationSubscription, setLocationSubscription] = useState(null);
   const [isTracking, setIsTracking] = useState(false);
   const [isChangingLocation, setIsChangingLocation] = useState(false);
   const [locationError, setLocationError] = useState(null);
+  const [isRequestingPermission, setIsRequestingPermission] = useState(false);
   
   // Bildirim kontrolü için ref kullan
   const lastHomeLocationRef = useRef(null);
   const notificationShownRef = useRef(false);
+  const saveLocationTimeoutRef = useRef(null);
 
-  // Kullanıcının konum izinlerini isteme
+  // Kullanıcının konum izinlerini isteme - önemli değişiklikler içerir
   const requestPermissions = useCallback(async () => {
+    console.log('İzinler talep ediliyor - başlangıç');
+    
+    // Eğer zaten izin isteme sürecindeyse, tekrar isteme
+    if (isRequestingPermission) {
+      console.log('Zaten izin isteniyor, tekrar isteme atlanıyor');
+      return false;
+    }
+    
     try {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') {
-        const errorMessage = strings[currentLanguage]?.errors?.location || "Konum izni verilmedi.";
-        setLocationError(errorMessage);
-        Alert.alert(
-          strings[currentLanguage]?.errors?.permission || "İzin Hatası", 
-          errorMessage
-        );
-        return false;
+      setIsRequestingPermission(true);
+      console.log('Konum izni isteniyor...');
+      
+      // İznin zaten verilip verilmediğini kontrol et (izin isteğini azaltmak için)
+      const { status: foregroundStatus } = await Location.getForegroundPermissionsAsync();
+      
+      if (foregroundStatus === 'granted') {
+        console.log('Konum izni zaten verilmiş');
+        setIsRequestingPermission(false);
+        return true;
       }
+      
+      // Platform bazlı yaklaşım
+      if (Platform.OS === 'ios') {
+        // iOS için daha güvenli yöntem
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        console.log('iOS izin sonucu:', status);
+        
+        if (status !== 'granted') {
+          const errorMessage = strings[currentLanguage]?.errors?.location || "Konum izni verilmedi.";
+          setLocationError(errorMessage);
+          
+          // Hafif gecikmeli Alert gösterimi (UI bloke olmasın diye)
+          setTimeout(() => {
+            Alert.alert(
+              strings[currentLanguage]?.errors?.permission || "İzin Hatası", 
+              errorMessage
+            );
+          }, 100);
+          
+          setIsRequestingPermission(false);
+          return false;
+        }
+      } else {
+        // Android için
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        console.log('Android izin sonucu:', status);
+        
+        if (status !== 'granted') {
+          const errorMessage = strings[currentLanguage]?.errors?.location || "Konum izni verilmedi.";
+          setLocationError(errorMessage);
+          
+          setTimeout(() => {
+            Alert.alert(
+              strings[currentLanguage]?.errors?.permission || "İzin Hatası", 
+              errorMessage
+            );
+          }, 100);
+          
+          setIsRequestingPermission(false);
+          return false;
+        }
+      }
+      
       setLocationError(null);
+      setIsRequestingPermission(false);
+      console.log('İzin verme işlemi başarılı');
       return true;
     } catch (error) {
       console.error("İzin hatası:", error);
       const errorMessage = strings[currentLanguage]?.errors?.permissionsError || "Konum izinleri alınırken bir hata oluştu.";
       setLocationError(errorMessage);
-      Alert.alert(
-        strings[currentLanguage]?.errors?.error || "Hata", 
-        errorMessage
-      );
+      
+      setTimeout(() => {
+        Alert.alert(
+          strings[currentLanguage]?.errors?.error || "Hata", 
+          errorMessage
+        );
+      }, 100);
+      
+      setIsRequestingPermission(false);
       return false;
     }
-  }, [currentLanguage, strings]);
+  }, [currentLanguage, strings, isRequestingPermission]);
 
-  // Konum kaydetme fonksiyonu
+  // Konum kaydetme fonksiyonu - daha güvenli bir versiyonu
   const saveLocation = useCallback(async () => {
+    console.log('saveLocation fonksiyonu başlatıldı');
+    
+    // Eğer zaten işlemde olan bir konum kaydetme varsa, tekrar başlatma
+    if (saveLocationTimeoutRef.current) {
+      console.log('Zaten aktif bir konum kaydetme işlemi var');
+      return;
+    }
+    
     try {
+      console.log('Konum izni isteniyor');
+      
+      // İzin isteme ve kontrol
       const permissionGranted = await requestPermissions();
-      if (!permissionGranted) return;
+      if (!permissionGranted) {
+        console.log('İzin verilmedi, çıkılıyor');
+        return;
+      }
 
       setLocationError(null);
-      const location = await Location.getCurrentPositionAsync({
+      console.log('Mevcut konum alınıyor...');
+      
+      // Konum alma işlemini zamanla sınırla
+      let locationTimeoutId = null;
+      const locationPromise = Location.getCurrentPositionAsync({
         accuracy: Location.Accuracy.High
       });
+      
+      const timeoutPromise = new Promise((_, reject) => {
+        locationTimeoutId = setTimeout(() => {
+          console.log('Konum alma işlemi zaman aşımına uğradı');
+          reject(new Error('Konum alma zaman aşımı'));
+        }, 10000); // 10 sn zaman aşımı
+      });
+      
+      const location = await Promise.race([locationPromise, timeoutPromise]);
+      
+      // Zaman aşımı temizle
+      if (locationTimeoutId) clearTimeout(locationTimeoutId);
+      
+      console.log('Konum başarıyla alındı:', location?.coords);
 
       if (location?.coords) {
         const { latitude, longitude } = location.coords;
         
-        Alert.prompt(
-          strings[currentLanguage]?.location?.namePrompt || "Konum Adı",
-          strings[currentLanguage]?.location?.nameDescription || "Bu konumu nasıl adlandırmak istersiniz?",
-          [
-            { 
-              text: strings[currentLanguage]?.buttons?.cancel || "İptal", 
-              style: "cancel" 
-            },
-            {
-              text: strings[currentLanguage]?.buttons?.save || "Kaydet",
-              onPress: async (name) => {
-                if (!name) return;
-                
-                const newLocation = {
-                  id: Date.now().toString(),
-                  name,
-                  latitude,
-                  longitude,
-                  items: [...selectedItems], // O anda seçili eşyaları bu konuma ekle
-                  createdAt: new Date().toISOString()
-                };
+        console.log('Konum ismi sorgulanacak');
+        
+        // Platform bazlı Alert.prompt yaklaşımı (Android'de yok)
+        if (Platform.OS === 'ios') {
+          Alert.prompt(
+            strings[currentLanguage]?.location?.namePrompt || "Konum Adı",
+            strings[currentLanguage]?.location?.nameDescription || "Bu konumu nasıl adlandırmak istersiniz?",
+            [
+              { 
+                text: strings[currentLanguage]?.buttons?.cancel || "İptal", 
+                style: "cancel",
+                onPress: () => {
+                  console.log('Konum isimlendirme iptal edildi');
+                  saveLocationTimeoutRef.current = null;
+                }
+              },
+              {
+                text: strings[currentLanguage]?.buttons?.save || "Kaydet",
+                onPress: async (name) => {
+                  if (!name) {
+                    console.log('İsim girilmedi, çıkılıyor');
+                    saveLocationTimeoutRef.current = null;
+                    return;
+                  }
+                  
+                  console.log('Konum kaydediliyor, isim:', name);
+                  
+                  try {
+                    const newLocation = {
+                      id: Date.now().toString(),
+                      name,
+                      latitude,
+                      longitude,
+                      items: [...selectedItems], // O anda seçili eşyaları bu konuma ekle
+                      createdAt: new Date().toISOString()
+                    };
 
-                try {
-                  const updatedLocations = [...savedLocations, newLocation];
-                  setSavedLocations(updatedLocations);
-                  await AsyncStorage.setItem(
-                    STORAGE_KEYS.SAVED_LOCATIONS,
-                    JSON.stringify(updatedLocations)
-                  );
-                  setHomeLocation(newLocation);
-                } catch (error) {
-                  console.error("Storage error:", error);
-                  Alert.alert(
-                    strings[currentLanguage]?.errors?.error || "Hata", 
-                    strings[currentLanguage]?.errors?.locationSaveError || "Konum kaydedilemedi"
-                  );
+                    const updatedLocations = [...savedLocations, newLocation];
+                    setSavedLocations(updatedLocations);
+                    
+                    // Asenkron işlemleri try-catch içinde yap
+                    try {
+                      await AsyncStorage.setItem(
+                        STORAGE_KEYS.SAVED_LOCATIONS,
+                        JSON.stringify(updatedLocations)
+                      );
+                      console.log('Konum başarıyla AsyncStorage\'a kaydedildi');
+                    } catch (storageError) {
+                      console.error("Storage error:", storageError);
+                      // AsyncStorage hatası olsa bile çalışmaya devam et
+                    }
+                    
+                    setHomeLocation(newLocation);
+                    console.log('Home konumu güncellendi');
+                  } catch (saveError) {
+                    console.error("Konum kaydetme hatası:", saveError);
+                    setTimeout(() => {
+                      Alert.alert(
+                        strings[currentLanguage]?.errors?.error || "Hata", 
+                        strings[currentLanguage]?.errors?.locationSaveError || "Konum kaydedilemedi"
+                      );
+                    }, 100);
+                  }
+                  
+                  saveLocationTimeoutRef.current = null;
                 }
               }
-            }
-          ]
-        );
+            ]
+          );
+        } else {
+          // Android için basit bir alternatif
+          Alert.alert(
+            strings[currentLanguage]?.location?.namePrompt || "Konum Adı",
+            strings[currentLanguage]?.location?.nameDescription || "Bu konumu nasıl adlandırmak istersiniz?",
+            [
+              { 
+                text: strings[currentLanguage]?.buttons?.cancel || "İptal", 
+                style: "cancel",
+                onPress: () => {
+                  console.log('Konum isimlendirme iptal edildi');
+                  saveLocationTimeoutRef.current = null;
+                }
+              },
+              {
+                text: strings[currentLanguage]?.buttons?.save || "Kaydet",
+                onPress: () => {
+                  // Basit bir isim atama
+                  const defaultName = "Konum " + new Date().toLocaleTimeString();
+                  
+                  console.log('Konum kaydediliyor (Android), isim:', defaultName);
+                  
+                  try {
+                    const newLocation = {
+                      id: Date.now().toString(),
+                      name: defaultName,
+                      latitude,
+                      longitude,
+                      items: [...selectedItems],
+                      createdAt: new Date().toISOString()
+                    };
+
+                    const updatedLocations = [...savedLocations, newLocation];
+                    setSavedLocations(updatedLocations);
+                    
+                    // Asenkron işlemleri try-catch içinde yap
+                    AsyncStorage.setItem(
+                      STORAGE_KEYS.SAVED_LOCATIONS,
+                      JSON.stringify(updatedLocations)
+                    ).catch(e => console.error("Storage error:", e));
+                    
+                    setHomeLocation(newLocation);
+                    console.log('Home konumu güncellendi (Android)');
+                  } catch (saveError) {
+                    console.error("Konum kaydetme hatası (Android):", saveError);
+                    Alert.alert(
+                      strings[currentLanguage]?.errors?.error || "Hata", 
+                      strings[currentLanguage]?.errors?.locationSaveError || "Konum kaydedilemedi"
+                    );
+                  }
+                  
+                  saveLocationTimeoutRef.current = null;
+                }
+              }
+            ]
+          );
+        }
+        
+        // İşlem için timeout ref ayarla
+        saveLocationTimeoutRef.current = setTimeout(() => {
+          saveLocationTimeoutRef.current = null;
+        }, 30000); // 30 sn sonra temizle (uzun sürebilir)
       }
     } catch (error) {
       console.error("Konum kaydetme hatası:", error);
       const errorMessage = strings[currentLanguage]?.errors?.locationSaveError || "Konum kaydedilemedi";
       setLocationError(errorMessage);
-      Alert.alert(
-        strings[currentLanguage]?.errors?.error || "Hata", 
-        errorMessage
-      );
+      
+      setTimeout(() => {
+        Alert.alert(
+          strings[currentLanguage]?.errors?.error || "Hata", 
+          errorMessage
+        );
+      }, 100);
+      
+      saveLocationTimeoutRef.current = null;
     }
   }, [currentLanguage, requestPermissions, savedLocations, selectedItems, strings]);
 
   // Konum takibini başlatma fonksiyonu
   const startLocationTracking = useCallback(async (savedLocation) => {
     try {
-      // savedLocation parametresini veya state'teki homeLocation'ı kullan
-      const locationToTrack = savedLocation || homeLocation;
+      // İşlem zaman aşımı ekleyin
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Konum izleme zaman aşımı')), 10000)
+      );
       
-      if (!locationToTrack) {
-        const errorMessage = strings[currentLanguage]?.location?.noHomeLocation || "Önce ev konumunuzu kaydetmelisiniz.";
-        setLocationError(errorMessage);
-        Alert.alert(
-          strings[currentLanguage]?.errors?.error || "Hata", 
-          errorMessage
-        );
-        return;
-      }
-
-      // Eğer zaten takip varsa, yeni bir takip başlatmayalım
-      if (locationSubscription) {
-        return;
-      }
-      
-      console.log("Takip başlatılıyor, konum:", locationToTrack);
-      setLocationError(null);
-
-      // Kullanıcı hareketine dayalı daha akıllı takip
-      const foregroundPermission = await Location.requestForegroundPermissionsAsync();
-      const backgroundPermission = await Location.requestBackgroundPermissionsAsync();
-      
-      // Pil optimizasyonu için ayarları düzenleme
-      const accuracy = backgroundPermission.status === 'granted' 
-        ? Location.Accuracy.Balanced
-        : Location.Accuracy.Low;
+      // Gerçek işlem
+      const trackingPromise = async () => {
+        // savedLocation parametresini veya state'teki homeLocation'ı kullan
+        const locationToTrack = savedLocation || homeLocation;
         
-      const timeInterval = backgroundPermission.status === 'granted'
-        ? 180000 // Arka planda 3 dakika
-        : 90000;  // Ön planda 1.5 dakika
-        
-      const subscription = await Location.watchPositionAsync(
-        {
-          accuracy: accuracy,
-          timeInterval: timeInterval,
-          distanceInterval: 15, // 15 metrede bir kontrol et (battarya tasarrufu)
-        },
-        (location) => {
-          const { latitude, longitude } = location.coords;
-          const distance = getDistanceFromLatLonInMeters(
-            locationToTrack.latitude,
-            locationToTrack.longitude,
-            latitude,
-            longitude
+        if (!locationToTrack) {
+          const errorMessage = strings[currentLanguage]?.location?.noHomeLocation || "Önce ev konumunuzu kaydetmelisiniz.";
+          setLocationError(errorMessage);
+          Alert.alert(
+            strings[currentLanguage]?.errors?.error || "Hata", 
+            errorMessage
           );
-
-          console.log("Mevcut mesafe:", distance);
-
-          // 50 metre uzaklaşınca bildirim gönder ve konum takibini durdur
-          if (distance >= MIN_DISTANCE && !notificationShownRef.current) {
-            notificationManager.sendAlert(strings, currentLanguage, selectedItems);
-            Vibration.vibrate(1000);
-            notificationShownRef.current = true;
-            
-            // Konum takibini durdur
-            if (subscription) {
-              subscription.remove();
-              setLocationSubscription(null);
-              setIsTracking(false);
-              console.log("Konum takibi durduruldu: Kullanıcı konumdan 50+ metre uzaklaştı");
-              
-              // Kullanıcıya bildirim göster
-              Alert.alert(
-                strings[currentLanguage]?.alerts?.trackingStopped || "Takip Durduruldu", 
-                strings[currentLanguage]?.alerts?.leftArea || "Belirtilen alandan uzaklaştınız. Konum takibi durduruldu."
-              );
-            }
-          } else if (distance < MIN_DISTANCE) {
-            notificationShownRef.current = false;
-          }
+          return;
         }
-      );
 
-      setLocationSubscription(subscription);
-      setIsTracking(true);
-    } catch (error) {
-      console.error("Konum takibi hatası:", error);
-      const errorMessage = strings[currentLanguage]?.errors?.trackingError || 
-        `Konum takibi başlatılamadı: ${error.message || "Bilinmeyen hata"}`;
+        // Eğer zaten takip varsa, yeni bir takip başlatmayalım
+        if (locationSubscription) {
+          return;
+        }
+        
+        console.log("Takip başlatılıyor, konum:", locationToTrack);
+        setLocationError(null);
+
+        // Kullanıcı hareketine dayalı daha akıllı takip
+        const foregroundPermission = await Location.requestForegroundPermissionsAsync();
+        const backgroundPermission = await Location.requestBackgroundPermissionsAsync();
+        
+        // Pil optimizasyonu için ayarları düzenleme
+        const accuracy = backgroundPermission.status === 'granted' 
+          ? Location.Accuracy.Balanced
+          : Location.Accuracy.Low;
+          
+        const timeInterval = backgroundPermission.status === 'granted'
+          ? 180000 // Arka planda 3 dakika
+          : 90000;  // Ön planda 1.5 dakika
+          
+        const subscription = await Location.watchPositionAsync(
+          {
+            accuracy: accuracy,
+            timeInterval: timeInterval,
+            distanceInterval: 15, // 15 metrede bir kontrol et (battarya tasarrufu)
+          },
+          (location) => {
+            const { latitude, longitude } = location.coords;
+            const distance = getDistanceFromLatLonInMeters(
+              locationToTrack.latitude,
+              locationToTrack.longitude,
+              latitude,
+              longitude
+            );
+
+            console.log("Mevcut mesafe:", distance);
+
+            // 50 metre uzaklaşınca bildirim gönder ve konum takibini durdur
+            if (distance >= MIN_DISTANCE && !notificationShownRef.current) {
+              notificationManager.sendAlert(strings, currentLanguage, selectedItems);
+              Vibration.vibrate(1000);
+              notificationShownRef.current = true;
+              
+              // Konum takibini durdur
+              if (subscription) {
+                subscription.remove();
+                setLocationSubscription(null);
+                setIsTracking(false);
+                console.log("Konum takibi durduruldu: Kullanıcı konumdan 50+ metre uzaklaştı");
+                
+                // Kullanıcıya bildirim göster
+                Alert.alert(
+                  strings[currentLanguage]?.alerts?.trackingStopped || "Takip Durduruldu", 
+                  strings[currentLanguage]?.alerts?.leftArea || "Belirtilen alandan uzaklaştınız. Konum takibi durduruldu."
+                );
+              }
+            } else if (distance < MIN_DISTANCE) {
+              notificationShownRef.current = false;
+            }
+          }
+        );
+
+        setLocationSubscription(subscription);
+        setIsTracking(true);
+      };
       
-      setLocationError(errorMessage);
-      Alert.alert(
-        strings[currentLanguage]?.errors?.error || "Hata",
-        errorMessage
-      );
+      // Hangisi önce tamamlanırsa
+      await Promise.race([trackingPromise(), timeoutPromise]);
+    } catch (error) {
+      console.error('Konum takibi başlatılamadı:', error);
+      // Devam etmeyi sağla
     }
   }, [currentLanguage, homeLocation, locationSubscription, selectedItems, strings]);
 
@@ -278,10 +474,15 @@ export default function useLocationTracking(strings, currentLanguage, selectedIt
   // Konuma ait eşyaları güncelle (sessiz mod ekleyelim)
   const updateLocationItems = useCallback(async (locationId, silent = true) => {
     try {
+      console.log('updateLocationItems çağrıldı, ID:', locationId);
+      
       // Güncellenecek konumu bul
       const locationToUpdate = savedLocations.find(loc => loc.id === locationId);
       
-      if (!locationToUpdate) return false;
+      if (!locationToUpdate) {
+        console.log('Belirtilen ID ile konum bulunamadı');
+        return false;
+      }
       
       // Konum için seçili eşyaları güncelle
       const updatedLocation = {
@@ -297,7 +498,12 @@ export default function useLocationTracking(strings, currentLanguage, selectedIt
       
       // State ve AsyncStorage'ı güncelle
       setSavedLocations(updatedLocations);
-      await AsyncStorage.setItem(STORAGE_KEYS.SAVED_LOCATIONS, JSON.stringify(updatedLocations));
+      
+      try {
+        await AsyncStorage.setItem(STORAGE_KEYS.SAVED_LOCATIONS, JSON.stringify(updatedLocations));
+      } catch (storageError) {
+        console.error("AsyncStorage güncelleme hatası:", storageError);
+      }
       
       // Sessiz mod değilse konsola bilgi ver
       if (!silent) {
@@ -312,8 +518,11 @@ export default function useLocationTracking(strings, currentLanguage, selectedIt
 
   // Kaydedilmiş konumları yükleme
   useEffect(() => {
+    console.log('locationTracking - kaydedilmiş konumları yükleme useEffect');
+    
     const loadSavedLocations = async () => {
       try {
+        console.log('Kaydedilmiş konumlar yükleniyor');
         const [savedLocationsList, savedHomeLocation] = await Promise.all([
           AsyncStorage.getItem(STORAGE_KEYS.SAVED_LOCATIONS),
           AsyncStorage.getItem(STORAGE_KEYS.HOME_LOCATION)
@@ -321,12 +530,18 @@ export default function useLocationTracking(strings, currentLanguage, selectedIt
         
         if (savedLocationsList) {
           const locations = JSON.parse(savedLocationsList);
+          console.log(`${locations.length} konum yüklendi`);
           setSavedLocations(locations);
+        } else {
+          console.log('Kaydedilmiş konum bulunamadı');
         }
         
         if (savedHomeLocation) {
           const homeLocationData = JSON.parse(savedHomeLocation);
+          console.log('Kaydedilmiş ev konumu yüklendi:', homeLocationData.name);
           setHomeLocation(homeLocationData);
+        } else {
+          console.log('Kaydedilmiş ev konumu bulunamadı');
         }
       } catch (error) {
         console.error("Konumlar yüklenirken hata:", error);
@@ -386,6 +601,8 @@ export default function useLocationTracking(strings, currentLanguage, selectedIt
     
   }, [homeLocation, startLocationTracking, strings, currentLanguage, isChangingLocation]);
 
+  console.log('useLocationTracking hook kurulumu tamamlandı');
+  
   return {
     homeLocation,
     setHomeLocation,

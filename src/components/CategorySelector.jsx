@@ -13,7 +13,7 @@ const CategoryButton = memo(({
   <TouchableOpacity
     style={[
       styles.categoryButton,
-      { backgroundColor: isDarkMode ? '#2C2E' : '#FFFFFF', 
+      { backgroundColor: isDarkMode ? '#2C2C2E' : '#FFFFFF', 
         borderColor: isDarkMode ? '#3A3A3C' : '#E5E5EA' },
       isSelected && { backgroundColor: '#007AFF', borderColor: '#007AFF' }
     ]}

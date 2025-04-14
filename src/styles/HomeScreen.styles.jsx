@@ -21,7 +21,7 @@ const colors = {
   common: {
     primary: '#007AFF',
     success: '#34C759',
-    warning: 'red',
+    warning: '#FF9500',
     error: '#FF3B30',
     shadow: '#000000'
   }
@@ -129,6 +129,11 @@ export const createDynamicStyles = (isDarkMode) => ({
     fontSize: 12,
     fontWeight: '500',
   },
+  selectedLocationItem: {
+    backgroundColor: isDarkMode ? '#2A394D' : 'rgba(0, 122, 255, 0.1)',
+    borderLeftWidth: 3,
+    borderLeftColor: colors.common.primary
+  }
 });
 
 // Sabit stiller (StyleSheet.create içindeki tüm mevcut stiller aynen korundu)
@@ -168,9 +173,9 @@ export const styles = StyleSheet.create({
     height: 42, 
     marginRight: 8,
     borderRadius: 21, 
-    backgroundColor: colors.dark.surface, // Koyu kart rengi
+    backgroundColor: '#2C2C2E', // Değiştirildi - koyu tema için gri renk
     borderWidth: 1,
-    borderColor: colors.dark.border, // Koyu kenarlık
+    borderColor: '#3A3A3C', // Koyu kenarlık
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: colors.common.shadow,
@@ -655,7 +660,52 @@ languageNotificationText: {
   color: '#FFFFFF',
   fontWeight: '600',
   fontSize: 14,
-}
+},
+  locationListItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    backgroundColor: colors.dark.surface,
+    borderRadius: 12,
+    marginBottom: 10,
+    shadowColor: colors.common.shadow,
+    shadowOffset: {width: 0, height: 1},
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  selectedLocationItem: {
+    backgroundColor: '#2A394D', // Koyu temada seçili konu arka plan rengi
+    borderLeftWidth: 3,
+    borderLeftColor: colors.common.primary
+  },
+  locationItemIcon: {
+    fontSize: 22,
+    marginRight: 12
+  },
+  locationItemContent: {
+    flex: 1
+  },
+  locationItemName: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 2
+  },
+  locationItemInfo: {
+    fontSize: 13,
+    opacity: 0.7
+  },
+  emptyListContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20
+  },
+  emptyListText: {
+    fontSize: 16,
+    textAlign: 'center',
+    opacity: 0.7
+  }
 });
 
 export default {

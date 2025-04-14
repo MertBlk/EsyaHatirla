@@ -3,21 +3,59 @@ import { NavigationContainer } from '@react-navigation/native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { StatusBar } from 'expo-status-bar';
-import { View, useColorScheme, AppState, Platform, LogBox } from 'react-native';
+import { View, useColorScheme, AppState, Platform, LogBox, ActivityIndicator, Text, Alert } from 'react-native';
 import HomeScreen from './screens/HomeScreen';
 import { ThemeProvider } from './context/ThemeContext';
 import notificationManager from './src/utils/notificationManager';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+// Genel hata yakalayıcı
+const ErrorBoundary = ({ children }) => {
+  const [hasError, setHasError] = useState(false);
+  const [error, setError] = useState(null);
 
-// Bazı gereksiz uyarıları dikkate alma
-LogBox.ignoreLogs([
-  'Overwriting fontFamily style attribute preprocessor',
-  'VirtualizedLists should never be nested', // FlatList iç içe kullanımı uyarısı
-]);
+  useEffect(() => {
+    const errorHandler = (error, isFatal) => {
+      setError(error);
+      setHasError(true);
+      
+      // Fatal hataları kullanıcıya göster
+      if (isFatal) {
+        Alert.alert(
+          'Uygulama Hatası',
+          `Beklenmeyen bir hata oluştu: ${error.toString()}`,
+          [{ text: 'Tamam', onPress: () => {} }]
+        );
+      }
+    };
 
-// Splash ekranını göster
+    // React Native global hata işleyicisini ayarla
+    const originalHandler = global.ErrorUtils && global.ErrorUtils.getGlobalHandler 
+      ? global.ErrorUtils.getGlobalHandler() 
+      : null;
+      
+    if (global.ErrorUtils && global.ErrorUtils.setGlobalHandler) {
+      global.ErrorUtils.setGlobalHandler(errorHandler);
+    }
 
+    return () => {
+      if (global.ErrorUtils && global.ErrorUtils.setGlobalHandler && originalHandler) {
+        global.ErrorUtils.setGlobalHandler(originalHandler);
+      }
+    };
+  }, []);
+
+  if (hasError) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 }}>
+        <Text style={{ fontSize: 16, marginBottom: 20 }}>Uygulama bir hata ile karşılaştı</Text>
+        <Text style={{ color: 'red' }}>{error?.toString()}</Text>
+      </View>
+    );
+  }
+
+  return children;
+};
 
 const Stack = createNativeStackNavigator();
 
@@ -57,7 +95,7 @@ const STORAGE_KEYS = {
 export default function App() {
   const colorScheme = useColorScheme();
   const [isDarkMode, setIsDarkMode] = useState(colorScheme === 'dark');
-  const [isReady, setIsReady] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const appState = useRef(AppState.currentState);
   
   // Tema ve dil ayarlarını eğer varsa hafızadan yükle
@@ -79,21 +117,20 @@ export default function App() {
           AsyncStorage.setItem(
             STORAGE_KEYS.THEME, 
             colorScheme === 'dark' ? 'dark' : 'light'
-          ).catch(console.error);
+          ).catch(error => {});
         }
         
         // Uygulama yeniden açıldığında bildirimleri düzgünce ayarla
         const lang = savedLanguageValue || 'tr';
-        await notificationManager.setupNotifications(lang);
+        try {
+          await notificationManager.setupNotifications(lang);
+        } catch (error) {}
         
-        // Ayarlar yüklendikten sonra uygulamanın hazır olduğunu işaretle
-        setIsReady(true);
-        await SplashScreen.hideAsync();
+        // Yükleme tamamlandı
+        setIsLoading(false);
       } catch (error) {
-        console.error('Ayarlar yüklenirken hata oluştu:', error);
         // Hata olsa da uygulamayı göster
-        setIsReady(true);
-        await SplashScreen.hideAsync();
+        setIsLoading(false);
       }
     };
     
@@ -111,7 +148,7 @@ export default function App() {
         // Bildirimleri yenile
         AsyncStorage.getItem(STORAGE_KEYS.LANGUAGE)
           .then(lang => notificationManager.setupNotifications(lang || 'tr'))
-          .catch(console.error);
+          .catch();
       }
       
       // Arka plana geçtiğinde yapılacak işlemler
@@ -135,9 +172,7 @@ export default function App() {
     setIsDarkMode(darkMode);
     try {
       await AsyncStorage.setItem(STORAGE_KEYS.THEME, darkMode ? 'dark' : 'light');
-    } catch (error) {
-      console.error('Tema kaydedilirken hata:', error);
-    }
+    } catch (error) {}
   };
   
   // Renkleri useMemo ile sarmalayarak optimize edelim
@@ -166,32 +201,44 @@ export default function App() {
     colors
   }), [isDarkMode, colors, handleThemeChange]);
 
-  // Uygulama hazır değilse boş bir görünüm göster
-  if (!isReady) {
+  // Uygulama yükleniyorsa yükleme ekranı göster
+  if (isLoading) {
     return (
-      <View style={{ flex: 1, backgroundColor: isDarkMode ? '#000000' : '#FFFFFF' }} />
+      <View style={{ 
+        flex: 1, 
+        backgroundColor: isDarkMode ? '#000000' : '#FFFFFF',
+        alignItems: 'center',
+        justifyContent: 'center'
+      }}>
+        <ActivityIndicator size="large" color="#007AFF" />
+        <Text style={{ marginTop: 20, color: isDarkMode ? '#FFFFFF' : '#000000' }}>
+          Uygulama yükleniyor...
+        </Text>
+      </View>
     );
   }
 
   return (
-    <ThemeProvider value={themeContextValue}>
-      <View style={{ flex: 1, backgroundColor: colors.background }}>
-        <SafeAreaProvider>
-          <NavigationContainer>
-            <Stack.Navigator screenOptions={screenOptions}>
-              <Stack.Screen 
-                name="Home" 
-                component={HomeScreen}
-                options={{ 
-                  title: '',
-                  headerShown: false 
-                }} 
-              />
-            </Stack.Navigator>
-            <StatusBar style={isDarkMode ? "light" : "dark"} />
-          </NavigationContainer>
-        </SafeAreaProvider>
-      </View>
-    </ThemeProvider>
+    <ErrorBoundary>
+      <ThemeProvider value={themeContextValue}>
+        <View style={{ flex: 1, backgroundColor: colors.background }}>
+          <SafeAreaProvider>
+            <NavigationContainer>
+              <Stack.Navigator screenOptions={screenOptions}>
+                <Stack.Screen 
+                  name="Home" 
+                  component={HomeScreen}
+                  options={{ 
+                    title: '',
+                    headerShown: false 
+                  }} 
+                />
+              </Stack.Navigator>
+              <StatusBar style={isDarkMode ? "light" : "dark"} />
+            </NavigationContainer>
+          </SafeAreaProvider>
+        </View>
+      </ThemeProvider>
+    </ErrorBoundary>
   );
 }
