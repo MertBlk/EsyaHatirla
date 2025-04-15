@@ -4,9 +4,8 @@
     "slug": "esyahatirla",
     "version": "1.0.0",
     "orientation": "portrait",
-    "newArchEnabled": true,
     "icon": "./assets/app.png",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "automatic",
     "splash": {
       "image": "./assets/app.png",
       "resizeMode": "contain",
@@ -46,7 +45,6 @@
         {
           "icon": "./assets/app.png",
           "color": "#ffffff"
-          
         }
       ],
       [
@@ -61,8 +59,7 @@
         "projectId": "esyahatirla"
       }
     },
-    "experiments": {
-      "newArchEnabled": true
-    }
+    "sdkVersion": "52.0.0",
+    "newArchEnabled": true
   }
 }

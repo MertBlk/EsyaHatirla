@@ -166,12 +166,14 @@ export const styles = StyleSheet.create({
   categoryContainer: {
     height: 60, // 40'tan 50'ye çıkarıyorum
     marginBottom: 8,
+    
     paddingVertical: 0,    
   },
   categoryButton: {
     minWidth: 100, 
     height: 42, 
     marginRight: 8,
+    marginBottom:10,
     borderRadius: 21, 
     backgroundColor: '#2C2C2E', // Değiştirildi - koyu tema için gri renk
     borderWidth: 1,

@@ -1,11 +1,11 @@
 import React, { memo, useMemo } from 'react';
 import { View, Text } from 'react-native';
 import { styles } from '../../src/styles/HomeScreen.styles';
+import { useTheme } from '../../context/ThemeContext';
 
-/**
- * İstatistik Kartı - Seçili ve toplam eşya sayılarını gösterir
- */
-const StatsCard = memo(({ selectedItems, getFilteredItems, safeGetString, isDarkMode }) => {
+const StatsCard = memo(({ selectedItems, getFilteredItems, safeGetString }) => {
+  const { isDark: isDarkMode } = useTheme();
+
   // Performans için filtrelenmiş öğelerin sayısını önbelleğe al
   const filteredItemsCount = useMemo(() => {
     return getFilteredItems().length;

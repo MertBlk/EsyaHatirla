@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo, memo } from "react";
+import React, { useState, useEffect, useCallback, useMemo, memo, useRef } from "react";
 import { View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet, Alert, Vibration, Modal, ScrollView, StatusBar, ActivityIndicator, Switch, Pressable } from "react-native";
 import CheckBox from '@react-native-community/checkbox';
 import * as Location from 'expo-location';
@@ -19,11 +19,7 @@ import ThemeToggle from '../src/components/ThemeToggle';
 import useLanguage from '../src/hooks/useLanguage';
 import useLocationTracking from '../src/hooks/useLocationTracking';
 import notificationManager from '../src/utils/notificationManager';
-
-// Global bildirim dinleyicisini tanımla
-let notificationListener = null;
-// Konum bildirimini kontrol etmek için bayrak
-let locationSaveNotified = false;
+import { useTheme } from '../context/ThemeContext';
 
 // Memoize edilmiş liste öğesi bileşeni
 const ItemComponent = memo(({ item, selectedItems, toggleItem, isDarkMode, dynamicStyles }) => (
@@ -34,6 +30,9 @@ const ItemComponent = memo(({ item, selectedItems, toggleItem, isDarkMode, dynam
       selectedItems.includes(item) && dynamicStyles.selectedItem,
     ]}
     onPress={() => toggleItem(item)}
+    activeOpacity={0.7}
+    delayPressIn={0}
+    pressRetentionOffset={{ top: 10, left: 10, right: 10, bottom: 10 }}
     accessibilityLabel={item}
     accessibilityRole="button"
     accessibilityHint={selectedItems.includes(item) ? "Seçilmiş eşya, kaldırmak için dokunun" : "Seçmek için dokunun"}
@@ -198,6 +197,10 @@ const LanguageSelectionModal = memo(({
 
 const HomeScreen = () => {
   try {
+    // useRef'leri bileşen içinde tanımla
+    const notificationSubscriptionRef = useRef(null);
+    const locationSaveNotifiedRef = useRef(false);
+    
     const { 
       currentLanguage, setLanguage, toggleLanguage, safeGetString, languages 
     } = useLanguage();
@@ -209,7 +212,6 @@ const HomeScreen = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedCategory, setSelectedCategory] = useState('Tümü');
     const [isLoading, setIsLoading] = useState(false);
-    const [isDarkMode, setIsDarkMode] = useState(false);
     const [locationName, setLocationName] = useState('');
     const [showSettings, setShowSettings] = useState(false);
     const [saveNotification, setSaveNotification] = useState(false);
@@ -226,12 +228,25 @@ const HomeScreen = () => {
       simulateLocationChange, updateLocationItems
     } = locationTracking;
 
+    // Tema kancasını kullan
+    const { isDark: isDarkMode, setIsDarkMode: handleThemeChange } = useTheme();
+
     // Bildirim ayarlarını kurma
     useEffect(() => {
       try {
         notificationManager.setupNotifications(currentLanguage)
-          .catch(error => {});
-      } catch (error) {}
+          .catch(error => {
+            Alert.alert(
+              strings[currentLanguage]?.errors?.error || 'Hata',
+              strings[currentLanguage]?.errors?.setupError || 'Bildirim ayarları sırasında hata oluştu.'
+            );
+          });
+      } catch (error) {
+        Alert.alert(
+          strings[currentLanguage]?.errors?.error || 'Hata',
+          strings[currentLanguage]?.errors?.unexpectedError || 'Beklenmeyen bir hata oluştu.'
+        );
+      }
     }, [currentLanguage]);
 
     // Filtreleme işlevi için getFilteredItems fonksiyonu
@@ -266,40 +281,60 @@ const HomeScreen = () => {
 
     // useEffect içindeki bildirim dinleyicisini düzenle
     useEffect(() => {
-      const subscription = Notifications.addNotificationResponseReceivedListener(async (response) => {
-        const { actionIdentifier, notification } = response;
-        const notificationLang = notification.request.content.data?.language || currentLanguage;
-        const itemsList = selectedItems.length > 0 
-          ? `${selectedItems.join('\n• ')}` 
-          : strings[notificationLang].alerts.noItems;
-  
-        if (actionIdentifier === 'yes') {
-          await notificationManager.send({
-            content: {
-              title: strings[notificationLang].alerts.confirm,
-              body: strings[notificationLang].alerts.itemsConfirmed,
-              sound: 'default',
-              data: { language: notificationLang }
-            },
-            trigger: null
-          });
-        } else if (actionIdentifier === 'no') {
-          Vibration.vibrate([1000, 500, 1000]);
-          await notificationManager.send({
-            content: {
-              title: strings[notificationLang].alerts.forgot,
-              body: `${strings[notificationLang].alerts.goBack}\n• ${itemsList}`,
-              sound: 'default',
-              priority: 'high',
-              data: { language: notificationLang }
-            },
-            trigger: null
-          });
+      // Önceki dinleyiciyi temizle
+      if (notificationSubscriptionRef.current) {
+        notificationSubscriptionRef.current.remove();
+      }
+      
+      // Yeni dinleyici oluştur ve ref'e kaydet
+      notificationSubscriptionRef.current = Notifications.addNotificationResponseReceivedListener(async (response) => {
+        try {
+          const { actionIdentifier, notification } = response;
+          const notificationLang = notification.request.content.data?.language || currentLanguage;
+          const itemsList = selectedItems.length > 0 
+            ? `${selectedItems.join('\n• ')}` 
+            : strings[notificationLang].alerts.noItems;
+
+          if (actionIdentifier === 'yes') {
+            await notificationManager.send({
+              content: {
+                title: strings[notificationLang].alerts.confirm,
+                body: strings[notificationLang].alerts.itemsConfirmed,
+                sound: 'default',
+                data: { language: notificationLang }
+              },
+              trigger: null
+            });
+          } else if (actionIdentifier === 'no') {
+            Vibration.vibrate([1000, 500, 1000]);
+            await notificationManager.send({
+              content: {
+                title: strings[notificationLang].alerts.forgot,
+                body: `${strings[notificationLang].alerts.goBack}\n• ${itemsList}`,
+                sound: 'default',
+                priority: 'high',
+                data: { language: notificationLang }
+              },
+              trigger: null
+            });
+          }
+        } catch (error) {
+          console.error('Bildirim işleme hatası:', error);
+          Alert.alert(
+            strings[currentLanguage]?.errors?.error || 'Hata',
+            strings[currentLanguage]?.errors?.notificationError || 'Bildirim yanıtı işlenirken hata oluştu.'
+          );
         }
       });
-  
-      return () => subscription.remove();
-    }, [selectedItems, currentLanguage]); // Bağımlılık dizisini düzeltme
+
+      // Cleanup fonksiyonu
+      return () => {
+        if (notificationSubscriptionRef.current) {
+          notificationSubscriptionRef.current.remove();
+          notificationSubscriptionRef.current = null;
+        }
+      };
+    }, [currentLanguage, selectedItems]); // Sadece gerçekten bağımlı olduğumuz state'leri ekledik
   
     // Dinamik stilleri oluştur
     const dynamicStyles = useMemo(() => createDynamicStyles(isDarkMode), [isDarkMode]);
@@ -376,15 +411,15 @@ const HomeScreen = () => {
             contentContainerStyle={{ paddingBottom: 60 }}
             // Optimize edilmiş FlatList ayarları
             removeClippedSubviews={true}
-            initialNumToRender={10}
+            initialNumToRender={8}
             maxToRenderPerBatch={5}
-            updateCellsBatchingPeriod={50}
+            updateCellsBatchingPeriod={100}
             windowSize={5}
             getItemLayout={(data, index) => (
               {length: 60, offset: 60 * index, index}
             )}
-            keyExtractor={(item, index) => `item-${index}-${item.substring(0,3)}`}
-            renderItem={({ item }) => (
+            keyExtractor={useCallback((item, index) => `item-${index}-${item.substring(0,3)}`, [])}
+            renderItem={useCallback(({ item }) => (
               <ItemComponent 
                 item={item}
                 selectedItems={selectedItems}
@@ -392,7 +427,15 @@ const HomeScreen = () => {
                 isDarkMode={isDarkMode}
                 dynamicStyles={dynamicStyles}
               />
-            )}
+            ), [selectedItems, toggleItem, isDarkMode, dynamicStyles])}
+            showsVerticalScrollIndicator={true}
+            scrollEventThrottle={32}
+            onEndReachedThreshold={0.5}
+            bounces={true}
+            maintainVisibleContentPosition={{
+              minIndexForVisible: 0,
+              autoscrollToTopThreshold: 10
+            }}
           />
           
           {/* Yükleme göstergesi */}
@@ -439,7 +482,7 @@ const HomeScreen = () => {
               setShowSettings(false);
             }}
             isDarkMode={isDarkMode}
-            setIsDarkMode={setIsDarkMode}
+            setIsDarkMode={handleThemeChange}
             currentLanguage={currentLanguage}
             languages={languages}
             setLanguage={setLanguage}

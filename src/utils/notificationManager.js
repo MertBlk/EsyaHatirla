@@ -15,7 +15,8 @@ class NotificationManager {
     this.lastNotificationTime = 0;
     this.cooldownPeriod = 2000; // 2 saniye bekleme süresi
     this.notificationHistory = new Map(); // Bildirim geçmişini saklayacak map
-    this.maxHistorySize = 100; // Maksimum tarih geçmişi boyutu
+    this.notificationCooldowns = new Map(); // Bildirim cooldown'ları için map
+    this.maxHistorySize = 50; // Maksimum tarih geçmişi boyutunu azalttık (bellek optimizasyonu)
     this.cleanupInterval = null; // Temizleme işlemi için interval
     this.isSetup = false; // Kurulum durumunu takip etmek için
   }
@@ -91,10 +92,10 @@ class NotificationManager {
       clearInterval(this.cleanupInterval);
     }
     
-    // Her 30 dakikada bir eski bildirimleri temizle
+    // Her 15 dakikada bir eski bildirimleri temizle (daha sık temizleme)
     this.cleanupInterval = setInterval(() => {
       this.cleanupOldNotifications();
-    }, 30 * 60 * 1000);
+    }, 15 * 60 * 1000);
   }
   
   /**
@@ -103,15 +104,22 @@ class NotificationManager {
   cleanupOldNotifications() {
     try {
       const now = Date.now();
-      const oneHourAgo = now - (60 * 60 * 1000);
+      const thirtyMinutesAgo = now - (30 * 60 * 1000); // 30 dakikadan eski bildirimleri temizle
       
       let deletedCount = 0;
       
-      // 1 saatten eski bildirimleri temizle
+      // 30 dakikadan eski bildirimleri temizle
       for (const [key, timestamp] of this.notificationHistory) {
-        if (timestamp < oneHourAgo) {
+        if (timestamp < thirtyMinutesAgo) {
           this.notificationHistory.delete(key);
           deletedCount++;
+        }
+      }
+      
+      // Notifikasyon cooldown süresini de temizle
+      for (const [key, timestamp] of this.notificationCooldowns) {
+        if (timestamp < thirtyMinutesAgo) {
+          this.notificationCooldowns.delete(key);
         }
       }
       
@@ -127,23 +135,25 @@ class NotificationManager {
         });
       }
       
-      if (deletedCount > 0) {
-        console.log(`${deletedCount} adet eski bildirim temizlendi. Kalan: ${this.notificationHistory.size}`);
-      }
+      return deletedCount;
     } catch (error) {
       console.error('Bildirim temizleme hatası:', error);
+      return 0;
     }
   }
 
   /**
    * Bildirim butonlarını güncelle
    * @param {string} currentLanguage - Mevcut dil kodu
-   * @returns {Promise<void>}
+   * @returns {Promise<boolean>}
    */
   async updateNotificationButtons(currentLanguage) {
     try {
-      const yesText = currentLanguage === 'tr' ? '✅ Evet, Aldım' : '✅ Yes, I Have Them';
-      const noText = currentLanguage === 'tr' ? '❌ Hayır, Unuttum' : '❌ No, I Forgot';
+      // Güvenli dil kontrolü
+      const lang = currentLanguage && typeof currentLanguage === 'string' ? currentLanguage : 'tr';
+      
+      const yesText = lang === 'tr' ? '✅ Evet, Aldım' : '✅ Yes, I Have Them';
+      const noText = lang === 'tr' ? '❌ Hayır, Unuttum' : '❌ No, I Forgot';
 
       await Notifications.setNotificationCategoryAsync('items', [
         {
@@ -163,41 +173,55 @@ class NotificationManager {
           }
         }
       ]);
+      
+      return true;
     } catch (error) {
       console.error('Bildirim butonları güncellenirken hata:', error);
+      return false;
     }
   }
 
   /**
    * Bildirim gönder
    * @param {Object} config - Bildirim yapılandırması
-   * @returns {Promise<boolean>} - İşlem başarılı oldu mu
+   * @returns {Promise<string|boolean>} - Bildirim ID'si veya işlem başarısı
    */
   async send(config) {
     const now = Date.now();
     
     // Eğer işlem devam ediyorsa veya cooldown süresi dolmadıysa çık
     if (this.isProcessing || (now - this.lastNotificationTime) < this.cooldownPeriod) {
-      console.log('Bildirim engellendi: İşlem devam ediyor veya cooldown süresi dolmadı');
-      return false;
+      return false; // İşlem devam ediyor veya cooldown süresi dolmadı
     }
     
     try {
       this.isProcessing = true;
       this.lastNotificationTime = now;
       
+      // Konfigürasyon nesnesini kontrol et
+      if (!config || !config.content) {
+        throw new Error('Geçersiz bildirim konfigürasyonu');
+      }
+      
       // Platform bazlı düzenlemeler (iOS için ses desteği)
-      if (Platform.OS === 'ios' && !config.content.sound) {
-        config.content.sound = 'default';
+      if (Platform.OS === 'ios') {
+        if (!config.content.sound) {
+          config.content.sound = 'default';
+        }
       }
 
-      // Bildirim ID'si oluştur ve saklayacağımız bir referans oluştur
-      const notificationId = await Notifications.scheduleNotificationAsync(config);
+      // Bildirim ID'si oluştur
+      const notificationId = await Notifications.scheduleNotificationAsync({
+        content: {
+          ...config.content,
+          // Geçersiz değerler olması durumunda varsayılan değerler ata
+          title: config.content.title || 'Bildirim',
+          body: config.content.body || '',
+        },
+        trigger: config.trigger || null
+      });
       
-      // Bildirimin işlenebilmesi için kısa bir süre bekle
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      return !!notificationId;
+      return notificationId;
     } catch (error) {
       console.error('Bildirim gönderme hatası:', error);
       return false;
@@ -215,6 +239,13 @@ class NotificationManager {
    */
   async sendAlert(strings, currentLanguage, selectedItems) {
     try {
+      // Parametre kontrolü
+      if (!strings || !currentLanguage) {
+        console.warn('Bildirim için gerekli parametreler eksik');
+        return false;
+      }
+      
+      // Kurulum kontrolü
       if (!this.isSetup) {
         await this.setupNotifications(currentLanguage);
       }
@@ -225,49 +256,65 @@ class NotificationManager {
         this.currentLanguage = currentLanguage;
       }
       
+      // Güvenli dil seçimi
+      const lang = currentLanguage && typeof currentLanguage === 'string' ? currentLanguage : 'tr';
+      
       // Eğer son 5 saniye içinde aynı içerikle bildirim gönderildiyse çık
       const now = Date.now();
-      const notificationKey = `${currentLanguage}-${selectedItems?.join(',') || 'empty'}`;
-      const lastSentTime = this.notificationHistory.get(notificationKey);
+      const notificationKey = `${lang}-${Array.isArray(selectedItems) ? selectedItems.join(',') : 'empty'}`;
+      const lastSentTime = this.notificationCooldowns.get(notificationKey);
       
       if (lastSentTime && now - lastSentTime < 5000) {
-        console.log('Aynı bildirim son 5 saniye içinde gönderildi, tekrar gönderilmiyor.');
-        return false;
+        return false; // Son 5 saniye içinde aynı bildirim gönderilmiş
       }
 
-      // Eğer selectedItems boş veya geçersizse, varsayılan metin göster
-      let itemsList;
+      // Eşya listesini güvenli bir şekilde hazırla
+      let itemsList = '';
       if (!selectedItems || !Array.isArray(selectedItems) || selectedItems.length === 0) {
-        itemsList = strings?.[currentLanguage]?.alerts?.noItems || "Seçili eşya yok";
+        itemsList = strings?.[lang]?.alerts?.noItems || "Seçili eşya yok";
       } else {
-        itemsList = selectedItems.join('\n• ');
+        // Uzun listeleri kısaltarak performans iyileştirmesi yap
+        const MAX_ITEMS = 10;
+        const displayItems = selectedItems.slice(0, MAX_ITEMS);
+        itemsList = displayItems.join('\n• ');
+        
+        if (selectedItems.length > MAX_ITEMS) {
+          const remaining = selectedItems.length - MAX_ITEMS;
+          const moreTxt = strings?.[lang]?.alerts?.moreItems || `ve ${remaining} eşya daha...`;
+          itemsList += `\n• ${moreTxt}`;
+        }
       }
 
-      // Bildirim gönder (Güvenlik kontrolü ile)
+      // Bildirim başlığı ve metni güvenli bir şekilde al
+      const title = strings?.[lang]?.alerts?.warning || "Uyarı";
+      const body = `${strings?.[lang]?.alerts?.items || "Eşyalarınız:"}\n• ${itemsList}`;
+
+      // Bildirim gönder
       const result = await this.send({
         content: {
-          title: strings?.[currentLanguage]?.alerts?.warning || "Uyarı",
-          body: `${strings?.[currentLanguage]?.alerts?.items || "Eşyalarınız:"}\n• ${itemsList}`,
+          title,
+          body,
           sound: 'default',
           priority: 'high',
           categoryIdentifier: 'items',
           vibrate: [1000, 500, 1000], // Android için titreşim
           data: { 
             type: NOTIFICATION_TYPES.REMINDER,
-            language: currentLanguage, // Dil bilgisini data içinde saklayalım
+            language: lang,
             timestamp: now,
-            items: selectedItems || []
+            items: selectedItems ? [...selectedItems] : [] // Kopya oluşturarak daha güvenli
           }
         },
         trigger: null
       });
 
-      // Başarılı gönderilen bildirimleri geçmişe ekle
+      // Başarılı gönderilen bildirim için cooldown ayarla
       if (result) {
         this.notificationHistory.set(notificationKey, now);
+        this.notificationCooldowns.set(notificationKey, now);
       }
       
-      return result;
+      return !!result;
     } catch (error) {
       console.error('Uyarı gönderme hatası:', error);
       return false;
@@ -285,7 +332,12 @@ class NotificationManager {
     
     // Gereksiz bellek kullanımını azalt
     this.notificationHistory.clear();
+    this.notificationCooldowns.clear();
     this.isProcessing = false;
+    
+    // Garbage collection'ı teşvik et
+    this.notificationHistory = new Map();
+    this.notificationCooldowns = new Map();
   }
   
   /**
@@ -294,7 +346,6 @@ class NotificationManager {
   async cancelAllNotifications() {
     try {
       await Notifications.cancelAllScheduledNotificationsAsync();
-      console.log('Tüm bildirimler iptal edildi');
       return true;
     } catch (error) {
       console.error('Bildirim iptal hatası:', error);
@@ -309,6 +360,11 @@ class NotificationManager {
    */
   async getNotificationsOfType(type) {
     try {
+      // Tip kontrolü
+      if (!type || !Object.values(NOTIFICATION_TYPES).includes(type)) {
+        return [];
+      }
+      
       const notifications = await Notifications.getAllScheduledNotificationsAsync();
       return notifications.filter(notification => 
         notification?.content?.data?.type === type

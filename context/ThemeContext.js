@@ -1,33 +1,45 @@
-import React, { createContext, useContext } from 'react';
+import React, { createContext, useContext, useCallback } from 'react';
 
-// Tema Bağlam API'si
-const ThemeContext = createContext({
-  isDark: true,
+// Varsayılan tema değerleri
+const defaultThemeContext = {
+  isDark: false,
   toggleTheme: () => {},
   setIsDarkMode: () => {},
   colors: {}
-});
+};
 
-export const ThemeProvider = ({ value, children }) => {
+// Tema context'ini oluştur
+const ThemeContext = createContext(defaultThemeContext);
+
+// ThemeProvider bileşeni
+export const ThemeProvider = ({ value = defaultThemeContext, children }) => {
+  // Tema değerlerini doğrula
+  const safeValue = {
+    isDark: value?.isDark ?? defaultThemeContext.isDark,
+    toggleTheme: value?.toggleTheme ?? defaultThemeContext.toggleTheme,
+    setIsDarkMode: value?.setIsDarkMode ?? defaultThemeContext.setIsDarkMode,
+    colors: value?.colors ?? defaultThemeContext.colors
+  };
+
   return (
-    <ThemeContext.Provider value={value || {
-      isDark: true,
-      toggleTheme: () => {},
-      setIsDarkMode: () => {},
-      colors: {}
-    }}>
+    <ThemeContext.Provider value={safeValue}>
       {children}
     </ThemeContext.Provider>
   );
 };
 
-// Tema kancası - bileşenlerde tema değişkenlerine kolayca erişim sağlar
+// useTheme hook'u
 export const useTheme = () => {
   const context = useContext(ThemeContext);
   
   if (context === undefined) {
-    throw new Error('useTheme must be used within a ThemeProvider');
+    throw new Error('useTheme hook\'u bir ThemeProvider içinde kullanılmalıdır');
   }
   
-  return context;
+  return {
+    ...context,
+    // Tema değişikliği için memoized callback
+    toggleTheme: useCallback(context.toggleTheme, [context.toggleTheme]),
+    setIsDarkMode: useCallback(context.setIsDarkMode, [context.setIsDarkMode])
+  };
 };

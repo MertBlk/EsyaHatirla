@@ -30,7 +30,6 @@ export default function useLanguage() {
           setCurrentLanguage(savedLanguage);
         }
       } catch (error) {
-        console.error('Dil yükleme hatası:', error);
         setError('Kaydedilmiş dil tercihi yüklenemedi.');
       } finally {
         setIsLoading(false);
@@ -50,11 +49,9 @@ export default function useLanguage() {
       
       setCurrentLanguage(lang);
       await AsyncStorage.setItem(LANGUAGE_STORAGE_KEY, lang);
-      console.log('Dil değiştirildi:', lang);
       
       return true;
     } catch (error) {
-      console.error('Dil değiştirme hatası:', error);
       setError(`Dil değiştirilemedi: ${error.message}`);
       return false;
     }
@@ -85,7 +82,6 @@ export default function useLanguage() {
       // Başarılı değiştirme durumunda yeni dili, aksi halde mevcut dili döndür
       return success ? newLang : currentLanguage;
     } catch (error) {
-      console.error('Dil değiştirme hatası:', error);
       return currentLanguage;
     }
   }, [currentLanguage, setLanguage]);
@@ -107,7 +103,6 @@ export default function useLanguage() {
       // Sonuç string dışında bir tip ise, fallback'e dön
       return typeof result === 'string' ? result : (result || fallback);
     } catch (error) {
-      console.warn(`String yüklenirken hata oluştu (${path}):`, error);
       return fallback;
     }
   }, [currentLanguage]);
@@ -137,7 +132,6 @@ export default function useLanguage() {
       
       return translations;
     } catch (error) {
-      console.error('Çeviri getirme hatası:', error);
       return fallback;
     }
   }, []);

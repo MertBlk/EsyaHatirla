@@ -1,6 +1,7 @@
 import React, { memo, useState, useCallback, useMemo } from 'react';
 import { View, Text, TouchableOpacity, Modal, FlatList, ActivityIndicator } from 'react-native';
 import { styles } from '../../src/styles/HomeScreen.styles';
+import { useTheme } from '../../context/ThemeContext';
 
 /**
  * Mevcut konum kartı bileşeni - konum seçimi ve konum listesi görünümünü sağlar
@@ -9,7 +10,6 @@ const CurrentLocationCard = memo(({
   homeLocation, 
   strings, 
   currentLanguage, 
-  isDarkMode,
   savedLocations, 
   setSavedLocations,
   setIsChangingLocation,
@@ -18,6 +18,7 @@ const CurrentLocationCard = memo(({
 }) => {
   const [isVisible, setIsVisible] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const { isDark: isDarkMode } = useTheme();
   
   // Yerelleştirilmiş metinleri güvenli şekilde alma
   const safeGetString = useCallback((path, fallback) => {
@@ -66,7 +67,7 @@ const CurrentLocationCard = memo(({
       // Modal'ı kapat
       setIsVisible(false);
     } catch (error) {
-      console.error('Konum değiştirme hatası:', error);
+      // Hata durumunda sessizce devam et
     } finally {
       // İşlem tamamlandığında bayrağı kapat
       setIsChangingLocation(false); 
@@ -79,7 +80,8 @@ const CurrentLocationCard = memo(({
     <TouchableOpacity
       style={[
         styles.locationListItem,
-        homeLocation?.id === item.id && styles.selectedLocationItem
+        homeLocation?.id === item.id && styles.selectedLocationItem,
+        { backgroundColor: isDarkMode ? '#2C2C2E' : '#FFFFFF' }
       ]}
       onPress={() => safelyChangeLocation(item)}
       disabled={isLoading}
@@ -106,7 +108,7 @@ const CurrentLocationCard = memo(({
         )}
       </View>
       {homeLocation?.id === item.id && (
-        <Text style={styles.checkmarkText}>✓</Text>
+        <Text style={[styles.checkmarkText, { color: isDarkMode ? '#007AFF' : '#007AFF' }]}>✓</Text>
       )}
     </TouchableOpacity>
   ), [homeLocation, isDarkMode, localizedText, safelyChangeLocation, isLoading]);
@@ -159,7 +161,7 @@ const CurrentLocationCard = memo(({
         >
           <View style={[styles.locationModalContainer, { backgroundColor: isDarkMode ? '#2C2C2E' : '#FFFFFF' }]}>
             <Text 
-              style={styles.locationModalTitle}
+              style={[styles.locationModalTitle, { color: isDarkMode ? '#FFFFFF' : '#000000' }]}
               accessibilityRole="header"
             >
               {localizedText.savedLocations}
