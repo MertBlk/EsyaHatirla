@@ -32,7 +32,13 @@ export const items = {
       '⌚️ Saat',
       '🔋 Powerbank',
       '🧴 El kremi',
-      '🧢 Şapka'
+      '🧢 Şapka',
+      '☔️ Şemsiye',
+      '🧣 Atkı',
+      '🧤 Eldiven',
+      '🎒 Sırt Çantası',
+      '🪮 Tarak/Fırça',
+      '💦 Su Şişesi'
     ],
     'İş/Okul': [
       '💻 Laptop',
@@ -41,7 +47,16 @@ export const items = {
       '📂 Dosyalar',
       '🎧 Kulaklık',
       '🔌 Şarj Aleti',
-      '💼 Çanta'
+      '💼 Çanta',
+      '📒 Ajanda',
+      '📏 Cetvel',
+      '📍 Ataç/Toplu İğne',
+      '📎 Zımba',
+      '🖨 Taşınabilir Yazıcı',
+      '🔍 Büyüteç',
+      '📌 Not Kağıtları',
+      '🗄 Klasör',
+      '💾 USB Bellek'
     ],
     'Spor': [
       '👟 Spor Ayakkabı',
@@ -51,7 +66,15 @@ export const items = {
       '🧴 Duş Jeli',
       '🧪 Deodorant',
       '🚿 Havlu',
-      '💧 Su Şişesi'
+      '💧 Su Şişesi',
+      '⌚️ Akıllı Saat',
+      '🎽 Yedek Tişört',
+      '🧘‍♀️ Yoga Matı',
+      '💪 Ağırlık Eldivenleri',
+      '🔒 Dolap Kilidi',
+      '🏊‍♂️ Bone/Gözlük',
+      '🎯 Nabız Ölçer',
+      '🧊 Buz Torbası'
     ],
     'Seyahat': [
       '🧳 Bavul',
@@ -64,14 +87,32 @@ export const items = {
       '📱 Telefon Şarj Aleti',
       '⌚️ Saat Şarj Aleti',
       '🛂 Pasaport',
-      '💯 Otel Rezervasyonu'
+      '💯 Otel Rezervasyonu',
+      '🗺 Harita',
+      '💊 İlk Yardım Çantası',
+      '🔒 Valiz Kilidi',
+      '👡 Terlik',
+      '🧴 Güneş Kremi',
+      '📸 Kamera',
+      '🎫 Biletler',
+      '💱 Döviz',
+      '🔌 Seyahat Adaptörü'
     ],
     'Sağlık': [
       '💊 İlaçlar',
       '😷 Maske',
       '💧 El Dezenfektanı',
       '🧬 Vitaminler',
-      '🩺 Sağlık Sigortası Kartı'
+      '🩺 Sağlık Sigortası Kartı',
+      '🌡 Ateş Ölçer',
+      '🩹 Yara Bandı',
+      '🧴 Nemlendirici',
+      '👓 Yedek Gözlük',
+      '🧪 Lens Solüsyonu',
+      '💉 Şırınga/İğne (Diyabet)',
+      '🧬 Alerji İlaçları',
+      '🧻 Islak Mendil',
+      '🧪 Test Kitleri'
     ],
     'Elektronik': [
       '📱 Telefon Şarj Aleti',
@@ -79,7 +120,16 @@ export const items = {
       '🎧 Kulaklık',
       '🔌 Priz Adaptörü',
       '📸 Kamera',
-      '🎮 Powerbank'
+      '🎮 Powerbank',
+      '💾 Harici Disk',
+      '🔋 Yedek Pil',
+      '📡 WiFi Router',
+      '🎤 Mikrofon',
+      '📺 Tablet',
+      '⌨️ Kablosuz Klavye',
+      '🖱 Kablosuz Mouse',
+      '📼 Hafıza Kartı',
+      '📹 Web Kamerası'
     ]
   },
   en: {
@@ -91,7 +141,13 @@ export const items = {
       '⌚️ Watch',
       '🔋 Powerbank',
       '🧴 Hand cream',
-      '🧢 Hat'
+      '🧢 Hat',
+      '☔️ Umbrella',
+      '🧣 Scarf',
+      '🧤 Gloves',
+      '🎒 Backpack',
+      '🪮 Comb/Brush',
+      '💦 Water Bottle'
     ],
     'Work/School': [
       '💻 Laptop',
@@ -100,7 +156,16 @@ export const items = {
       '📂 Files',
       '🎧 Headphones',
       '🔌 Charger',
-      '💼 Bag'
+      '💼 Bag',
+      '📒 Planner',
+      '📏 Ruler',
+      '📍 Pins',
+      '📎 Stapler',
+      '🖨 Portable Printer',
+      '🔍 Magnifying Glass',
+      '📌 Sticky Notes',
+      '🗄 Folder',
+      '💾 USB Drive'
     ],
     'Sports': [
       '👟 Sports Shoes',
@@ -110,7 +175,15 @@ export const items = {
       '🧴 Shower Gel',
       '🧪 Deodorant',
       '🚿 Towel',
-      '💧 Water Bottle'
+      '💧 Water Bottle',
+      '⌚️ Smart Watch',
+      '🎽 Spare T-shirt',
+      '🧘‍♀️ Yoga Mat',
+      '💪 Weight Lifting Gloves',
+      '🔒 Locker Lock',
+      '🏊‍♂️ Swimming Cap/Goggles',
+      '🎯 Heart Rate Monitor',
+      '🧊 Ice Pack'
     ],
     'Travel': [
       '🧳 Suitcase',
@@ -123,14 +196,32 @@ export const items = {
       '📱 Phone Charger',
       '⌚️ Watch Charger',
       '🛂 Passport',
-      '💯 Hotel Reservation'
+      '💯 Hotel Reservation',
+      '🗺 Map',
+      '💊 First Aid Kit',
+      '🔒 Luggage Lock',
+      '👡 Slippers',
+      '🧴 Sunscreen',
+      '📸 Camera',
+      '🎫 Tickets',
+      '💱 Currency',
+      '🔌 Travel Adapter'
     ],
     'Health': [
       '💊 Medication',
       '😷 Mask',
       '💧 Hand Sanitizer',
       '🧬 Vitamins',
-      '🩺 Health Insurance Card'
+      '🩺 Health Insurance Card',
+      '🌡 Thermometer',
+      '🩹 Band-Aid',
+      '🧴 Moisturizer',
+      '👓 Spare Glasses',
+      '🧪 Contact Solution',
+      '💉 Syringe/Needle (Diabetes)',
+      '🧬 Allergy Medicine',
+      '🧻 Wet Wipes',
+      '🧪 Test Kits'
     ],
     'Electronics': [
       '📱 Phone Charger',
@@ -138,7 +229,16 @@ export const items = {
       '🎧 Headphones',
       '🔌 Adapter',
       '📸 Camera',
-      '🎮 Powerbank'
+      '🎮 Powerbank',
+      '💾 External Drive',
+      '🔋 Spare Batteries',
+      '📡 WiFi Router',
+      '🎤 Microphone',
+      '📺 Tablet',
+      '⌨️ Wireless Keyboard',
+      '🖱 Wireless Mouse',
+      '📼 Memory Card',
+      '📹 Webcam'
     ]
   },
 };
