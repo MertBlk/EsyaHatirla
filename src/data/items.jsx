@@ -1,7 +1,7 @@
 // Tüm diller için kategorileri tanımlayalım
 export const categories = {
-  tr: ['Günlük', 'İş/Okul', 'Spor', 'Seyahat', 'Sağlık', 'Elektronik'],
-  en: ['Daily', 'Work/School', 'Sports', 'Travel', 'Health', 'Electronics'],
+  tr: ['Günlük', 'İş/Okul', 'Spor', 'Seyahat', 'Sağlık', 'Elektronik', 'Piknik/Kamp'],
+  en: ['Daily', 'Work/School', 'Sports', 'Travel', 'Health', 'Electronics', 'Picnic/Camping'],
 };
 
 // Kategori emojilerini tanımlayalım (tüm diller için aynı emoji kullanılabilir)
@@ -19,6 +19,8 @@ export const categoryIcons = {
   'Travel': '✈️',
   'Health': '💊',
   'Electronics': '📱',
+  'Piknik/Kamp': '🏕️',
+  'Picnic/Camping': '🏕️',
 };
 
 // Kategorilere göre eşyaları tanımlayalım
@@ -130,6 +132,28 @@ export const items = {
       '🖱 Kablosuz Mouse',
       '📼 Hafıza Kartı',
       '📹 Web Kamerası'
+    ],
+    'Piknik/Kamp': [
+      '🏕️ Çadır',
+      '🛏️ Uyku Tulumu',
+      '🔦 El Feneri',
+      '🔪 Çakı/Bıçak',
+      '🍽️ Tabak/Çatal/Kaşık',
+      '🥤 Termos',
+      '🧺 Piknik Sepeti',
+      '🪑 Kamp Sandalyesi',
+      '🔥 Mangal/Ocak',
+      '🧊 Buz Kabı',
+      '🧴 Böcek Kovucu',
+      '🧰 İlk Yardım Çantası',
+      '🎣 Olta Takımı',
+      '🪜 Masa',
+      '🧻 Tuvalet Kağıdı',
+      '🧼 Sabun/Islak Mendil',
+      '📍 Pusula',
+      '🪢 İp',
+      '🔨 Çekiç',
+      '🔧 Alet Çantası'
     ]
   },
   en: {
@@ -239,6 +263,28 @@ export const items = {
       '🖱 Wireless Mouse',
       '📼 Memory Card',
       '📹 Webcam'
+    ],
+    'Picnic/Camping': [
+      '🏕️ Tent',
+      '🛏️ Sleeping Bag',
+      '🔦 Flashlight',
+      '🔪 Knife/Multi-tool',
+      '🍽️ Plates/Utensils',
+      '🥤 Thermos',
+      '🧺 Picnic Basket',
+      '🪑 Camping Chair',
+      '🔥 Grill/Stove',
+      '🧊 Cooler',
+      '🧴 Insect Repellent',
+      '🧰 First Aid Kit',
+      '🎣 Fishing Gear',
+      '🪜 Table',
+      '🧻 Toilet Paper',
+      '🧼 Soap/Wet Wipes',
+      '📍 Compass',
+      '🪢 Rope',
+      '🔨 Hammer',
+      '🔧 Tool Kit'
     ]
   },
 };
